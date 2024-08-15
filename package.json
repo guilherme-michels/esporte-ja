@@ -1,0 +1,16 @@
+{
+  "name": "ip-3",
+  "module": "index.ts",
+  "type": "module",
+  "workspaces": [
+    "api",
+    "mobile",
+    "data"
+  ],
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
