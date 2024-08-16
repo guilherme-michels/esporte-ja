@@ -4,7 +4,7 @@ import { prisma } from "../../lib/prisma";
 
 export interface AppContext extends Context {
   user?: {
-    id: string;
+    id: any;
     name: string;
     email: string;
   };

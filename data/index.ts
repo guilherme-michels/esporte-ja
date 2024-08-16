@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { Prisma } from "@prisma/client";
 
 /////////////////////////////////////////
 // HELPER FUNCTIONS
@@ -25,6 +26,16 @@ export const UserScalarFieldEnumSchema = z.enum([
   "updatedAt",
 ]);
 
+export const ProfileScalarFieldEnumSchema = z.enum([
+  "id",
+  "bio",
+  "level",
+  "matchesPlayed",
+  "wins",
+  "losses",
+  "userId",
+]);
+
 export const CompanyScalarFieldEnumSchema = z.enum([
   "id",
   "name",
@@ -40,6 +51,10 @@ export const CourtScalarFieldEnumSchema = z.enum([
   "id",
   "name",
   "type",
+  "description",
+  "comments",
+  "rules",
+  "images",
   "createdAt",
   "companyId",
 ]);
@@ -70,6 +85,33 @@ export const AvailabilityScalarFieldEnumSchema = z.enum([
   "courtId",
 ]);
 
+export const EventScalarFieldEnumSchema = z.enum([
+  "id",
+  "name",
+  "type",
+  "description",
+  "dateTime",
+  "createdAt",
+  "courtId",
+]);
+
+export const NotificationScalarFieldEnumSchema = z.enum([
+  "id",
+  "type",
+  "message",
+  "read",
+  "createdAt",
+  "userId",
+]);
+
+export const HistoryScalarFieldEnumSchema = z.enum([
+  "id",
+  "result",
+  "createdAt",
+  "userId",
+  "bookingId",
+]);
+
 export const TokenScalarFieldEnumSchema = z.enum([
   "id",
   "type",
@@ -93,6 +135,18 @@ export const SportTypeSchema = z.enum([
 ]);
 
 export type SportTypeType = `${z.infer<typeof SportTypeSchema>}`;
+
+export const EventTypeSchema = z.enum([
+  "TOURNAMENT",
+  "CLINIC",
+  "FRIENDLY_MATCH",
+]);
+
+export type EventTypeType = `${z.infer<typeof EventTypeSchema>}`;
+
+export const NotificationTypeSchema = z.enum(["INVITE", "REMINDER", "RESULT"]);
+
+export type NotificationTypeType = `${z.infer<typeof NotificationTypeSchema>}`;
 
 export const TokenTypeSchema = z.enum(["PASSWORD_RECOVER"]);
 
@@ -119,6 +173,22 @@ export const UserSchema = z.object({
 export type User = z.infer<typeof UserSchema>;
 
 /////////////////////////////////////////
+// PROFILE SCHEMA
+/////////////////////////////////////////
+
+export const ProfileSchema = z.object({
+  id: z.string(),
+  bio: z.string().nullable(),
+  level: z.number().int(),
+  matchesPlayed: z.number().int(),
+  wins: z.number().int(),
+  losses: z.number().int(),
+  userId: z.string(),
+});
+
+export type Profile = z.infer<typeof ProfileSchema>;
+
+/////////////////////////////////////////
 // COMPANY SCHEMA
 /////////////////////////////////////////
 
@@ -143,6 +213,10 @@ export const CourtSchema = z.object({
   type: SportTypeSchema,
   id: z.string(),
   name: z.string(),
+  description: z.string().nullable(),
+  comments: z.string().nullable(),
+  rules: z.string().nullable(),
+  images: z.string().array(),
   createdAt: z.coerce.date(),
   companyId: z.string(),
 });
@@ -192,6 +266,51 @@ export const AvailabilitySchema = z.object({
 });
 
 export type Availability = z.infer<typeof AvailabilitySchema>;
+
+/////////////////////////////////////////
+// EVENT SCHEMA
+/////////////////////////////////////////
+
+export const EventSchema = z.object({
+  type: EventTypeSchema,
+  id: z.string(),
+  name: z.string(),
+  description: z.string().nullable(),
+  dateTime: z.coerce.date(),
+  createdAt: z.coerce.date(),
+  courtId: z.string(),
+});
+
+export type Event = z.infer<typeof EventSchema>;
+
+/////////////////////////////////////////
+// NOTIFICATION SCHEMA
+/////////////////////////////////////////
+
+export const NotificationSchema = z.object({
+  type: NotificationTypeSchema,
+  id: z.string(),
+  message: z.string(),
+  read: z.boolean(),
+  createdAt: z.coerce.date(),
+  userId: z.string(),
+});
+
+export type Notification = z.infer<typeof NotificationSchema>;
+
+/////////////////////////////////////////
+// HISTORY SCHEMA
+/////////////////////////////////////////
+
+export const HistorySchema = z.object({
+  id: z.string(),
+  result: z.string().nullable(),
+  createdAt: z.coerce.date(),
+  userId: z.string(),
+  bookingId: z.string(),
+});
+
+export type History = z.infer<typeof HistorySchema>;
 
 /////////////////////////////////////////
 // TOKEN SCHEMA

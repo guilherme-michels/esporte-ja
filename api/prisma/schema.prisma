@@ -9,7 +9,7 @@ datasource db {
 
 generator zod {
   provider                         = "zod-prisma-types"
-  output                           = "../../data"
+  output                           = "../../data/index.ts"
   createInputTypes                 = false 
   createModelTypes                 = true 
   addInputTypeValidation           = false 
@@ -26,6 +26,18 @@ enum SportType {
   TENNIS
 }
 
+enum EventType {
+  TOURNAMENT
+  CLINIC
+  FRIENDLY_MATCH
+}
+
+enum NotificationType {
+  INVITE
+  REMINDER
+  RESULT
+}
+
 model User {
   id           String   @id @default(uuid())
   name         String
@@ -40,8 +52,27 @@ model User {
   bookings     Booking[]
   companies    Company[] @relation("UserCompanies")
   ownedCompanies Company[] @relation("CompanyOwners")
+  notifications Notification[]
+  profile      Profile?
+
+  participatedEvents Event[] @relation("EventParticipants")
+
+  histories    History[]
 
   @@map("users")
+}
+
+model Profile {
+  id          String     @id @default(uuid())
+  bio         String?
+  level       Int        @default(1)
+  matchesPlayed Int      @default(0)
+  wins        Int        @default(0)
+  losses      Int        @default(0)
+  user        User       @relation(fields: [userId], references: [id])
+  userId      String     @unique @map("user_id")
+
+  @@map("profiles")
 }
 
 model Company {
@@ -66,6 +97,10 @@ model Court {
   id            String      @id @default(uuid())
   name          String
   type          SportType
+  description   String?     
+  comments      String?     
+  rules         String?     
+  images        String[]    
   createdAt     DateTime    @default(now()) @map("created_at")
 
   company       Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -74,6 +109,7 @@ model Court {
   bookings      Booking[]
   availability  Availability[]
   invites       Invite[]    
+  events        Event[]     
 
   @@map("courts")
 }
@@ -91,6 +127,7 @@ model Booking {
   courtId     String    @map("court_id")
 
   invite      Invite?
+  history     History[] // Relation to history
 
   @@map("bookings")
 }
@@ -127,6 +164,49 @@ model Availability {
   @@map("availability")
 }
 
+model Event {
+  id            String      @id @default(uuid())
+  name          String
+  type          EventType
+  description   String?
+  dateTime      DateTime
+  createdAt     DateTime    @default(now()) @map("created_at")
+
+  court         Court       @relation(fields: [courtId], references: [id], onDelete: Cascade)
+  courtId       String      @map("court_id")
+
+  participants  User[]      @relation("EventParticipants")
+
+  @@map("events")
+}
+
+model Notification {
+  id             String           @id @default(uuid())
+  type           NotificationType
+  message        String
+  read           Boolean          @default(false)
+  createdAt      DateTime         @default(now()) @map("created_at")
+
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String           @map("user_id")
+
+  @@map("notifications")
+}
+
+model History {
+  id          String    @id @default(uuid())
+  result      String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String    @map("user_id")
+
+  booking     Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  bookingId   String    @map("booking_id")
+
+  @@map("histories")
+}
+
 enum TokenType {
   PASSWORD_RECOVER
 }
@@ -141,4 +221,3 @@ model Token {
 
   @@map("tokens")
 }
-
