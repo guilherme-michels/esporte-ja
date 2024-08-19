@@ -14,7 +14,6 @@ import { swaggerUI } from "@hono/swagger-ui";
 
 const app = new Hono();
 app.use("*", logger());
-app.get("/ui", swaggerUI({ url: "/doc" }));
 
 const apiRoutes = app
   .basePath("/api")
@@ -30,6 +29,8 @@ const apiRoutes = app
 
 app.get("*", serveStatic({ root: "./frontend/dist" }));
 app.get("*", serveStatic({ path: "./frontend/dist/index.html" }));
+
+app.get("/ui", swaggerUI({ url: "/doc" }));
 
 export default app;
 export type ApiRoutes = typeof apiRoutes;

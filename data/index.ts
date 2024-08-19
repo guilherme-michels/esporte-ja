@@ -16,6 +16,28 @@ export const TransactionIsolationLevelSchema = z.enum([
   "Serializable",
 ]);
 
+export const ProfileScalarFieldEnumSchema = z.enum([
+  "id",
+  "bio",
+  "level",
+  "matchesPlayed",
+  "wins",
+  "losses",
+  "userId",
+]);
+
+export const EventScalarFieldEnumSchema = z.enum([
+  "id",
+  "title",
+  "description",
+  "type",
+  "date",
+  "companyId",
+  "dateTime",
+  "createdAt",
+  "profileId",
+]);
+
 export const UserScalarFieldEnumSchema = z.enum([
   "id",
   "name",
@@ -26,14 +48,21 @@ export const UserScalarFieldEnumSchema = z.enum([
   "updatedAt",
 ]);
 
-export const ProfileScalarFieldEnumSchema = z.enum([
+export const TrophyScalarFieldEnumSchema = z.enum([
   "id",
-  "bio",
-  "level",
-  "matchesPlayed",
-  "wins",
-  "losses",
-  "userId",
+  "name",
+  "description",
+  "date",
+  "profileId",
+]);
+
+export const CityScalarFieldEnumSchema = z.enum([
+  "id",
+  "name",
+  "state",
+  "country",
+  "createdAt",
+  "updatedAt",
 ]);
 
 export const CompanyScalarFieldEnumSchema = z.enum([
@@ -45,6 +74,7 @@ export const CompanyScalarFieldEnumSchema = z.enum([
   "createdAt",
   "updatedAt",
   "ownerId",
+  "cityId",
 ]);
 
 export const CourtScalarFieldEnumSchema = z.enum([
@@ -85,16 +115,6 @@ export const AvailabilityScalarFieldEnumSchema = z.enum([
   "courtId",
 ]);
 
-export const EventScalarFieldEnumSchema = z.enum([
-  "id",
-  "name",
-  "type",
-  "description",
-  "dateTime",
-  "createdAt",
-  "courtId",
-]);
-
 export const NotificationScalarFieldEnumSchema = z.enum([
   "id",
   "type",
@@ -110,6 +130,7 @@ export const HistoryScalarFieldEnumSchema = z.enum([
   "createdAt",
   "userId",
   "bookingId",
+  "eventId",
 ]);
 
 export const TokenScalarFieldEnumSchema = z.enum([
@@ -157,22 +178,6 @@ export type TokenTypeType = `${z.infer<typeof TokenTypeSchema>}`;
 /////////////////////////////////////////
 
 /////////////////////////////////////////
-// USER SCHEMA
-/////////////////////////////////////////
-
-export const UserSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  email: z.string(),
-  passwordHash: z.string(),
-  avatarUrl: z.string().nullable(),
-  createdAt: z.coerce.date(),
-  updatedAt: z.coerce.date(),
-});
-
-export type User = z.infer<typeof UserSchema>;
-
-/////////////////////////////////////////
 // PROFILE SCHEMA
 /////////////////////////////////////////
 
@@ -189,6 +194,69 @@ export const ProfileSchema = z.object({
 export type Profile = z.infer<typeof ProfileSchema>;
 
 /////////////////////////////////////////
+// EVENT SCHEMA
+/////////////////////////////////////////
+
+export const EventSchema = z.object({
+  type: EventTypeSchema,
+  id: z.string(),
+  title: z.string(),
+  description: z.string().nullable(),
+  date: z.coerce.date(),
+  companyId: z.string(),
+  dateTime: z.coerce.date(),
+  createdAt: z.coerce.date(),
+  profileId: z.string().nullable(),
+});
+
+export type Event = z.infer<typeof EventSchema>;
+
+/////////////////////////////////////////
+// USER SCHEMA
+/////////////////////////////////////////
+
+export const UserSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  email: z.string(),
+  passwordHash: z.string(),
+  avatarUrl: z.string().nullable(),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date(),
+});
+
+export type User = z.infer<typeof UserSchema>;
+
+/////////////////////////////////////////
+// TROPHY SCHEMA
+/////////////////////////////////////////
+
+export const TrophySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().nullable(),
+  date: z.coerce.date(),
+  profileId: z.string(),
+});
+
+export type Trophy = z.infer<typeof TrophySchema>;
+
+/////////////////////////////////////////
+// CITY SCHEMA
+/////////////////////////////////////////
+
+export const CitySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  state: z.string().nullable(),
+  country: z.string().nullable(),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date(),
+});
+
+export type City = z.infer<typeof CitySchema>;
+
+/////////////////////////////////////////
 // COMPANY SCHEMA
 /////////////////////////////////////////
 
@@ -201,6 +269,7 @@ export const CompanySchema = z.object({
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
   ownerId: z.string(),
+  cityId: z.string().nullable(),
 });
 
 export type Company = z.infer<typeof CompanySchema>;
@@ -268,22 +337,6 @@ export const AvailabilitySchema = z.object({
 export type Availability = z.infer<typeof AvailabilitySchema>;
 
 /////////////////////////////////////////
-// EVENT SCHEMA
-/////////////////////////////////////////
-
-export const EventSchema = z.object({
-  type: EventTypeSchema,
-  id: z.string(),
-  name: z.string(),
-  description: z.string().nullable(),
-  dateTime: z.coerce.date(),
-  createdAt: z.coerce.date(),
-  courtId: z.string(),
-});
-
-export type Event = z.infer<typeof EventSchema>;
-
-/////////////////////////////////////////
 // NOTIFICATION SCHEMA
 /////////////////////////////////////////
 
@@ -308,6 +361,7 @@ export const HistorySchema = z.object({
   createdAt: z.coerce.date(),
   userId: z.string(),
   bookingId: z.string(),
+  eventId: z.string().nullable(),
 });
 
 export type History = z.infer<typeof HistorySchema>;

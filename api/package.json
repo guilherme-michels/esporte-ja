@@ -4,11 +4,19 @@
   "type": "module",
   "scripts": {
     "start": "bun ./src/index.ts",
-    "dev": "bun --watch ./src/index.ts"
+    "dev": "bun --watch ./src/index.ts",
+    "db:migrate": "npx prisma migrate dev",
+    "db:seed": "npx prisma db seed",
+    "db:reset": "npx prisma migrate reset --force",
+    "db:generate": "npx prisma generate",
+    "db:studio": "npx prisma studio",
+    "build": "bun build ./src/index.ts",
+    "lint": "bun lint ./src/**/*.ts",
+    "test": "bun test ./src/**/*.test.ts"
   },
   "devDependencies": {
-    "@ip3/data": "workspace:*",
     "@faker-js/faker": "^8.4.1",
+    "@ip3/data": "workspace:*",
     "@types/bun": "latest"
   },
   "peerDependencies": {
@@ -16,6 +24,7 @@
   },
   "dependencies": {
     "@hono/swagger-ui": "^0.4.0",
+    "@hono/zod-openapi": "^0.15.3",
     "@hono/zod-validator": "^0.2.2",
     "@prisma/client": "^5.18.0",
     "@types/jsonwebtoken": "^9.0.6",

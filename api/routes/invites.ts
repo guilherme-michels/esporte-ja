@@ -13,8 +13,83 @@ invitesRoutes.get("/", protect, async (c: AppContext) => {
   }
 
   const invites = await prisma.invite.findMany({
-    where: {},
+    include: {
+      author: true,
+      court: true,
+      booking: true,
+    },
   });
 
   return c.json({ invites });
 });
+
+invitesRoutes.get("/:id", protect, async (c: AppContext) => {
+  const { id } = c.req.param();
+
+  const invite = await prisma.invite.findUnique({
+    where: { id },
+    include: {
+      author: true,
+      court: true,
+      booking: true,
+    },
+  });
+
+  if (!invite) {
+    return c.json({ message: "Invite not found" }, 404);
+  }
+
+  return c.json({ invite });
+});
+
+invitesRoutes.post("/", protect, async (c: AppContext) => {
+  const { email, courtId, authorId, bookingId } = await c.req.json();
+
+  const newInvite = await prisma.invite.create({
+    data: {
+      email,
+      courtId,
+      authorId,
+      bookingId,
+    },
+  });
+
+  return c.json({ invite: newInvite }, 201);
+});
+
+invitesRoutes.put("/:id", protect, async (c: AppContext) => {
+  const { id } = c.req.param();
+  const { email, courtId, authorId, bookingId } = await c.req.json();
+
+  const updatedInvite = await prisma.invite.update({
+    where: { id },
+    data: {
+      email,
+      courtId,
+      authorId,
+      bookingId,
+    },
+  });
+
+  return c.json({ invite: updatedInvite });
+});
+
+invitesRoutes.delete("/:id", protect, async (c: AppContext) => {
+  const { id } = c.req.param();
+
+  const invite = await prisma.invite.findUnique({
+    where: { id },
+  });
+
+  if (!invite) {
+    return c.json({ message: "Invite not found" }, 404);
+  }
+
+  await prisma.invite.delete({
+    where: { id },
+  });
+
+  return c.json({ message: "Invite deleted successfully" });
+});
+
+export default invitesRoutes;

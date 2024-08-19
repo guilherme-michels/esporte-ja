@@ -9,7 +9,7 @@ interface CourtsContext extends AppContext {
   get(key: "user"): User;
 }
 
-courtsRoutes.post("/", protect, async (c: CourtsContext) => {
+courtsRoutes.post("/", async (c: CourtsContext) => {
   const user = c.get("user");
 
   const { name, type, companyId } = await c.req.json();
