@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { protect, type AppContext } from "../src/http/middlewares/auth";
 import { prisma } from "../src/lib/prisma";
-import { type User } from "@ip3/data";
+import { type User } from "../schemas/index";
 
 export const profilesRoutes = new Hono();
 

@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { protect, type AppContext } from "../src/http/middlewares/auth";
 import { prisma } from "../src/lib/prisma";
-import { type User, type SportTypeType } from "@ip3/data";
+import { type User, type SportTypeType } from "../schemas/index";
 
 export const courtsRoutes = new Hono();
 

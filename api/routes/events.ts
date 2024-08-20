@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { protect } from "../src/http/middlewares/auth";
 import { prisma } from "../src/lib/prisma";
-import { EventSchema } from "@ip3/data";
+import { EventSchema } from "../schemas/index";
 
 export const eventsRoutes = new Hono();
 

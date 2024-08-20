@@ -16,7 +16,6 @@
   },
   "devDependencies": {
     "@faker-js/faker": "^8.4.1",
-    "@ip3/data": "workspace:*",
     "@types/bun": "latest"
   },
   "peerDependencies": {
