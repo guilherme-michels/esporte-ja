@@ -1,0 +1,5 @@
+packages:
+  - "apps/admin/*"
+  - "apps/api/*"
+  - "data/*"
+  - "config/*"

@@ -1,0 +1,21 @@
+{
+  "name": "@esporte-ja/eslint-config",
+  "version": "0.0.0",
+  "private": true,
+  "files": [
+    "library.js",
+    "react.js",
+    "node.js"
+  ],
+  "devDependencies": {
+    "@rocketseat/eslint-config": "^2.2.2",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-simple-import-sort": "^12.0.0"
+  },
+  "prettier": "@esporte-ja/prettier",
+  "eslintConfig": {
+    "extends": [
+      "./library.js"
+    ]
+  }
+}

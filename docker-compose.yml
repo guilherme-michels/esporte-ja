@@ -8,4 +8,4 @@ services:
     environment:
       - POSTGRES_USER=docker
       - POSTGRES_PASSWORD=docker
-      - POSTGRES_DB=ip3
+      - POSTGRES_DB=esporte-ja

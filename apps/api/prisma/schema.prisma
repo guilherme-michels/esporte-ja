@@ -1,0 +1,297 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://docker:docker@localhost:5432/esporte-ja?schema=public"
+}
+
+generator zod {
+  provider                         = "zod-prisma-types"
+  output                           = "../../data/index.ts"
+  createInputTypes                 = false 
+  createModelTypes                 = true 
+  addInputTypeValidation           = false 
+  createOptionalDefaultValuesTypes = false 
+  tsConfigFilePath                 = "tsconfig.json" 
+}
+
+
+enum SportType {
+  FOOTBALL
+  BEACH_TENNIS
+  VOLLEYBALL
+  FUTVOLEY
+  PADEL
+  TENNIS
+}
+
+enum EventType {
+  TOURNAMENT
+  CLINIC
+  FRIENDLY_MATCH
+}
+
+enum NotificationType {
+  INVITE
+  REMINDER
+  RESULT
+}
+
+model Profile {
+  id            String                   @id @default(uuid())
+  bio           String?
+  level         Int                      @default(1)
+  matchesPlayed Int                      @default(0)
+  wins          Int                      @default(0)
+  losses        Int                      @default(0)
+  user          User                     @relation(fields: [userId], references: [id])
+  userId        String                   @unique @map("user_id")
+
+  events        ProfileEventParticipation[] @relation("ProfileEventParticipations")
+
+  trophies      Trophy[]                 @relation("ProfileTrophies")
+
+  @@map("profiles")
+  Event Event[] @relation("ProfileEvents")
+}
+
+
+model Event {
+  id          String                   @id @default(uuid())
+  title       String
+  description String?
+  type        EventType
+  date        DateTime
+  company     Company                  @relation("CompanyEvents", fields: [companyId], references: [id], onDelete: Cascade)
+  companyId   String                   @map("company_id")
+
+  dateTime    DateTime
+  createdAt   DateTime                 @default(now()) @map("created_at")
+
+  participants ProfileEventParticipation[] @relation("ProfileEventParticipations")
+
+  profile     Profile?                 @relation("ProfileEvents", fields: [profileId], references: [id], onDelete: Cascade)
+  profileId   String?                  @map("profile_id")
+
+  histories   History[]
+
+  @@map("events")
+}
+
+
+model ProfileEventParticipation {
+  id                String   @id @default(uuid())
+  profile           Profile  @relation("ProfileEventParticipations", fields: [profileId], references: [id])
+  profileId         String   @map("profile_id")
+
+  event             Event    @relation("ProfileEventParticipations", fields: [eventId], references: [id])
+  eventId           String   @map("event_id")
+
+  participationDate DateTime @default(now())
+  classification    String?  
+
+  @@map("profile_event_participations")
+  @@unique([profileId, eventId])
+}
+
+model User {
+  id           String      @id @default(uuid())
+  name         String
+  email        String      @unique
+  passwordHash String      @map("password_hash")
+  avatarUrl    String?     @map("avatar_url")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+
+  tokens       Token[]
+  invites      Invite[]
+  bookings     Booking[]
+  companies    Company[]   @relation("UserCompanies")
+  ownedCompanies Company[] @relation("CompanyOwners")
+  notifications Notification[]
+  profile      Profile?
+
+  eventHistories History[]
+
+  @@map("users")
+  Review Review[]
+}
+
+model Trophy {
+  id          String     @id @default(uuid())
+  name        String
+  description String?
+  date        DateTime
+  profile     Profile    @relation("ProfileTrophies", fields: [profileId], references: [id], onDelete: Cascade)
+  profileId   String     @map("profile_id")
+
+  @@map("trophies")
+}
+
+model City {
+  id          String    @id @default(uuid())
+  name        String
+  state       String?
+  country     String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  companies   Company[]
+  
+  @@map("cities")
+}
+
+model Company {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  domain      String?  @unique
+  avatarUrl   String?  @map("avatar_url")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  owner       User     @relation("CompanyOwners", fields: [ownerId], references: [id])
+  ownerId     String   @map("owner_id")
+
+  courts      Court[]
+  admins      User[]   @relation("UserCompanies")
+
+  city        City?    @relation(fields: [cityId], references: [id])
+  cityId      String?  @map("city_id")
+
+  events      Event[]  @relation("CompanyEvents")
+
+  reviews     Review[] 
+
+  @@map("companies")
+}
+model Review {
+  id        String   @id @default(uuid())
+  rating    Int      
+  comment   String? 
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String   @map("user_id")
+  
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId String   @map("company_id")
+  
+  @@map("reviews")
+}
+
+model Court {
+  id            String      @id @default(uuid())
+  name          String
+  type          SportType
+  description   String?     
+  comments      String?     
+  rules         String?     
+  images        String[]    
+  createdAt     DateTime    @default(now()) @map("created_at")
+
+  company       Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId     String      @map("company_id")
+
+  bookings      Booking[]
+  availability  Availability[]
+  invites       Invite[]    
+
+  @@map("courts")
+}
+
+model Booking {
+  id          String    @id @default(uuid())
+  dateTime    DateTime
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String    @map("user_id")
+
+  court       Court     @relation(fields: [courtId], references: [id], onDelete: Cascade)
+  courtId     String    @map("court_id")
+
+  invite      Invite?
+  history     History[] 
+
+  @@map("bookings")
+}
+
+model Invite {
+  id              String      @id @default(uuid())
+  email           String
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  author          User?       @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  authorId        String?     @map("author_id")
+
+  court           Court       @relation(fields: [courtId], references: [id], onDelete: Cascade)
+  courtId         String      @map("court_id")
+
+  booking         Booking?    @relation(fields: [bookingId], references: [id])
+  bookingId       String?     @unique 
+
+  @@unique([email, courtId])
+  @@index([email])
+  @@map("invites")
+}
+
+model Availability {
+  id          String    @id @default(uuid())
+  dayOfWeek   Int       
+  startTime   String   
+  endTime     String    
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  court       Court     @relation(fields: [courtId], references: [id], onDelete: Cascade)
+  courtId     String    @map("court_id")
+
+  @@map("availability")
+}
+
+model Notification {
+  id             String           @id @default(uuid())
+  type           NotificationType
+  message        String
+  read           Boolean          @default(false)
+  createdAt      DateTime         @default(now()) @map("created_at")
+
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String           @map("user_id")
+
+  @@map("notifications")
+}
+
+model History {
+  id          String    @id @default(uuid())
+  result      String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String    @map("user_id")
+
+  booking     Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  bookingId   String    @map("booking_id")
+
+  event       Event?    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId     String?   @map("event_id")
+
+  @@map("histories")
+}
+
+enum TokenType {
+  PASSWORD_RECOVER
+}
+
+model Token {
+  id        String    @id @default(uuid())
+  type      TokenType
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String    @map("user_id")
+
+  @@map("tokens")
+}
