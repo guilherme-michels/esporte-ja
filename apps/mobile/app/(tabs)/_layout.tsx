@@ -2,29 +2,22 @@ import { Tabs } from "expo-router";
 import React from "react";
 
 import "../../global.css";
-import { TabBarIcon } from "@/components/navigation/TabBarIcon";
-import { Colors } from "@/constants/Colors";
-import { useColorScheme } from "@/hooks/useColorScheme";
+import { TabBarIcon } from "@/components/TabBarIcon";
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
+        tabBarActiveTintColor: "#000",
         headerShown: false,
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: "Início",
+          title: "Home",
           tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon
-              name={focused ? "home" : "home-outline"}
-              color={color}
-            />
+            <TabBarIcon name={"home"} color={color} />
           ),
         }}
       />
@@ -34,10 +27,7 @@ export default function TabLayout() {
         options={{
           title: "Calendário",
           tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon
-              name={focused ? "calendar" : "calendar-outline"}
-              color={color}
-            />
+            <TabBarIcon name={"calendar"} color={color} />
           ),
         }}
       />
@@ -47,10 +37,7 @@ export default function TabLayout() {
         options={{
           title: "Perfil",
           tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon
-              name={focused ? "person-circle" : "person-circle-outline"}
-              color={color}
-            />
+            <TabBarIcon name={"user-circle"} color={color} />
           ),
         }}
       />

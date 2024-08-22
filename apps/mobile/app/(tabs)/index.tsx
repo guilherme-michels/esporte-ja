@@ -1,13 +1,15 @@
+import { Button } from "@/components/Button";
 import { CompanyCard } from "@/components/ui/CompanyCard";
+import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
   SafeAreaView,
   Text,
-  TouchableOpacity,
   View,
   FlatList,
+  useColorScheme,
+  TouchableOpacity,
 } from "react-native";
-import { useWindowDimensions } from "react-native";
 
 interface Company {
   id: string;
@@ -24,7 +26,6 @@ const companies: Company[] = [
 
 export default function HomeScreen() {
   const [location, setLocation] = useState("Lajeado, RS");
-  const { width } = useWindowDimensions();
 
   const changeLocation = () => {
     setLocation("Porto Alegre, RS");
@@ -32,27 +33,27 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView className="flex-1">
-      <View className="p-4">
+      <View className="p-4 flex-row justify-between">
         <Text className="text-red-500 text-xl mb-4">
           Localidade: {location}
         </Text>
-        <TouchableOpacity
-          onPress={changeLocation}
-          className="bg-blue-500 p-2 rounded"
-        >
-          <Text className="text-white text-center">Trocar Localidade</Text>
+
+        <TouchableOpacity className="text-zinc-800 text-center flex">
+          <Text>teste</Text>
+          <Ionicons name={"arrow-forward-outline"} size={18} color={"#000"} />
         </TouchableOpacity>
       </View>
 
       <View className="mt-4">
         <FlatList
           data={companies}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
+          keyExtractor={(item: any) => item.id}
+          renderItem={({ item }: any) => (
             <CompanyCard onPress={() => console.log(item)} />
           )}
           horizontal
           showsHorizontalScrollIndicator={false}
+          contentContainerClassName="gap-4"
         />
       </View>
     </SafeAreaView>

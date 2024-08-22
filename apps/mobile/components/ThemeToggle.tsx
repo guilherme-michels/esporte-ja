@@ -8,7 +8,7 @@ import Animated, {
 
 import { cn } from "@/lib/cn";
 import { useColorScheme } from "@/lib/useColorScheme";
-import { Colors } from "@/constants/Colors";
+import { COLORS } from "@/theme/colors";
 
 export function ThemeToggle() {
   const { colorScheme, toggleColorScheme } = useColorScheme();
@@ -23,12 +23,12 @@ export function ThemeToggle() {
           {colorScheme === "dark"
             ? ({ pressed }) => (
                 <View className={cn("px-0.5", pressed && "opacity-50")}>
-                  <Ionicons name="moon" size={24} color={Colors.light.tint} />
+                  <Ionicons name="moon" size={24} color={COLORS.white} />
                 </View>
               )
             : ({ pressed }) => (
                 <View className={cn("px-0.5", pressed && "opacity-50")}>
-                  <Ionicons name="sunny" size={24} color={Colors.dark.tint} />
+                  <Ionicons name="sunny" size={24} color={COLORS.black} />
                 </View>
               )}
         </Pressable>
