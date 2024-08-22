@@ -9,7 +9,7 @@ datasource db {
 
 generator zod {
   provider                         = "zod-prisma-types"
-  output                           = "../../data/index.ts"
+  output                           = "../../../data/schemas"
   createInputTypes                 = false 
   createModelTypes                 = true 
   addInputTypeValidation           = false 
@@ -54,7 +54,6 @@ model Profile {
   trophies      Trophy[]                 @relation("ProfileTrophies")
 
   @@map("profiles")
-  Event Event[] @relation("ProfileEvents")
 }
 
 
@@ -71,9 +70,6 @@ model Event {
   createdAt   DateTime                 @default(now()) @map("created_at")
 
   participants ProfileEventParticipation[] @relation("ProfileEventParticipations")
-
-  profile     Profile?                 @relation("ProfileEvents", fields: [profileId], references: [id], onDelete: Cascade)
-  profileId   String?                  @map("profile_id")
 
   histories   History[]
 
@@ -148,7 +144,7 @@ model Company {
   name        String
   slug        String   @unique
   domain      String?  @unique
-  avatarUrl   String?  @map("avatar_url")
+  logoImg   String?  @map("logo_img")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
