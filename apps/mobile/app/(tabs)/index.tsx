@@ -1,21 +1,23 @@
-import { Button } from "@/components/Button";
-import { CompanyCard } from "@/components/ui/CompanyCard";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  SafeAreaView,
-  Text,
-  View,
   FlatList,
-  TouchableOpacity,
+  SafeAreaView,
   ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { useRouter } from "expo-router";
-import LocalityOptionsModal from "../locality-options-modal";
+
+import { Button } from "@/components/Button";
+import { CompanyCard } from "@/components/ui/CompanyCard";
 import { EventCard } from "@/components/ui/EventCard";
 import { MyCity } from "@/components/ui/MyCity";
-import { Company, Event, SportTypeSchema } from "@/schemas";
 import { SportTypeBadge } from "@/components/ui/SportTypeBadge";
+import { Company, Event, SportTypeSchema } from "@/schemas";
+
+import LocalityOptionsModal from "../locality-options-modal";
 
 const companies: Company[] = [
   {
@@ -51,30 +53,17 @@ const events: Event[] = [
     createdAt: new Date(),
     date: new Date(),
     id: "1",
-    title: "Evento A",
+    title: "Torneio de Beach Tennis - Dinápoli",
     dateTime: new Date(),
     description:
       "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus.",
     type: "TOURNAMENT",
   },
-
   {
     companyId: "2",
     createdAt: new Date(),
     date: new Date(),
-    id: "1",
-    title: "Evento A",
-    dateTime: new Date(),
-    description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus.",
-    type: "TOURNAMENT",
-  },
-
-  {
-    companyId: "3",
-    createdAt: new Date(),
-    date: new Date(),
-    id: "1",
+    id: "2",
     title: "Evento A",
     dateTime: new Date(),
     description:
@@ -88,7 +77,6 @@ export default function HomeScreen() {
   const [isLocalityOptionsModalOpened, setIsLocalityOptionsModalOpened] =
     useState(false);
   const router = useRouter();
-  const [numColumns, setNumColumns] = useState(2);
 
   const sportTypes = SportTypeSchema.options as string[];
   const [selectedSportType, setSelectedSportType] = useState<string | null>(
@@ -213,13 +201,14 @@ export default function HomeScreen() {
             </View>
 
             <FlatList
-              data={events}
+              data={events.slice(0, 2)}
               keyExtractor={(event) => event.id}
               renderItem={({ item: event }) => (
-                <EventCard onPress={() => console.log(event)} event={event} />
+                <EventCard
+                  onPress={() => router.push(`/event?id=${event.id}`)}
+                  event={event}
+                />
               )}
-              numColumns={numColumns}
-              key={numColumns}
             />
           </View>
 

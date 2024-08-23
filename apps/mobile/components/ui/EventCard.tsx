@@ -1,5 +1,6 @@
+import { Image, Text, TouchableOpacity, View } from "react-native";
+
 import { Event } from "@/schemas";
-import { Text, View, TouchableOpacity, Dimensions } from "react-native";
 
 interface EventCardProps {
   event: Event;
@@ -13,9 +14,28 @@ export const EventCard = ({ event, onPress }: EventCardProps) => {
       style={{
         flex: 1,
         margin: 8,
+        height: 200,
+        display: "flex",
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "flex-start",
       }}
     >
-      <View className="bg-blue-500 rounded p-4 flex-row justify-between h-[120px]" />
+      <Image
+        source={{
+          uri: "https://itaguara.com/wp-content/uploads/2023/06/inscricoes-abertas.jpg",
+        }}
+        className="w-1/2 h-full"
+        resizeMode="contain"
+      />
+
+      <View className="flex-1 ml-4 mt-4">
+        <Text className="text-lg font-bold text-gray-900">{event.title}</Text>
+        <Text className="text-sm text-gray-700 mt-1">
+          {event.dateTime.toLocaleDateString()}
+        </Text>
+        <Text className="text-sm text-gray-500 mt-1">{event.description}</Text>
+      </View>
     </TouchableOpacity>
   );
 };

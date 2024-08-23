@@ -1,5 +1,6 @@
+import { Image, Text, TouchableOpacity, View } from "react-native";
+
 import { Company } from "@/schemas";
-import { Text, View, TouchableOpacity, Image } from "react-native";
 interface CompanyCardProps {
   company: Company;
   onPress: () => void;
@@ -19,6 +20,7 @@ export const CompanyCard = ({ company, onPress }: CompanyCardProps) => {
         <Image
           source={{ uri: company.avatarUrl! }}
           className={"w-full h-full object-cover"}
+          alt="company-logo"
         />
       </View>
       <Text className={"mt-2 text-center font-semibold"}>{company.name}</Text>

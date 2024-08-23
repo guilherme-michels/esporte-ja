@@ -1,8 +1,8 @@
 import { useLocalSearchParams } from "expo-router";
-import { View, Text, Image, SafeAreaView } from "react-native";
+import { Image, SafeAreaView, Text, View } from "react-native";
+
 import { Company } from "@/schemas";
 
-// Lista estática de empresas para exemplo
 const company: Company = {
   id: "1",
   name: "Empresa A",
@@ -33,6 +33,7 @@ export default function CompanyScreen() {
           <Image
             source={{ uri: company.avatarUrl! }}
             className="w-24 h-24 rounded-full mb-4"
+            alt="company-avatar"
           />
           <Text className="text-2xl font-bold">{company.name}</Text>
         </View>
