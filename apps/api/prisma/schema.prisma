@@ -163,6 +163,34 @@ model City {
   @@map("cities")
 }
 
+model CompanyTeacher {
+  id       String   @id @default(uuid())
+  joinedAt DateTime @default(now()) @map("joined_at")
+
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId String  @map("company_id")
+
+  teacher   Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  teacherId String  @map("teacher_id")
+
+  @@unique([companyId, teacherId])
+  @@map("company_teachers")
+}
+
+model Teacher {
+  id        String   @id @default(uuid())
+  name      String
+  bio       String?
+  avatarImg String?  @map("avatar_img")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  bookings       Booking[]
+  CompanyTeacher CompanyTeacher[]
+
+  @@map("teachers")
+}
+
 model Company {
   id        String   @id @default(uuid())
   name      String
@@ -183,7 +211,8 @@ model Company {
 
   events Event[] @relation("CompanyEvents")
 
-  reviews Review[]
+  reviews        Review[]
+  CompanyTeacher CompanyTeacher[]
 
   @@map("companies")
 }
@@ -234,8 +263,10 @@ model Booking {
   court   Court  @relation(fields: [courtId], references: [id], onDelete: Cascade)
   courtId String @map("court_id")
 
-  invite  Invite?
-  history History[]
+  invite    Invite?
+  history   History[]
+  Teacher   Teacher?  @relation(fields: [teacherId], references: [id])
+  teacherId String?
 
   @@map("bookings")
 }
