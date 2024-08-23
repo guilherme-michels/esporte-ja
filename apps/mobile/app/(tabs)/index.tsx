@@ -10,7 +10,6 @@ import {
   View,
 } from "react-native";
 
-import { Button } from "@/components/Button";
 import { CompanyCard } from "@/components/ui/CompanyCard";
 import { EventCard } from "@/components/ui/EventCard";
 import { MyCity } from "@/components/ui/MyCity";

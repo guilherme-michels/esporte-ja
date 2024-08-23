@@ -36,7 +36,7 @@ export default function EventScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-100">
+    <SafeAreaView className="flex-1">
       <View className="px-4 bg-white size-full">
         <View className="mt-4 bg-white rounded-lg shadow-md mb-4">
           <Image
@@ -45,6 +45,7 @@ export default function EventScreen() {
             }}
             className="w-full h-60 rounded-lg"
             resizeMode="cover"
+            alt="event-image"
           />
           <Text className="text-2xl font-bold text-gray-800 mt-4">
             {event.title}

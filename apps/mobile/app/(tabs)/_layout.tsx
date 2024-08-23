@@ -26,7 +26,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="calendar"
         options={{
-          title: "Calendário",
+          title: "Agenda",
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name={"calendar"} color={color} />
           ),
