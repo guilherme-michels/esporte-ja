@@ -214,7 +214,21 @@ model Company {
   reviews        Review[]
   CompanyTeacher CompanyTeacher[]
 
+  openingHours OpeningHours[] @relation("CompanyOpeningHours")
+
   @@map("companies")
+}
+
+model OpeningHours {
+  id        String  @id @default(uuid())
+  dayOfWeek Int
+  opensAt   String
+  closesAt  String
+  company   Company @relation("CompanyOpeningHours", fields: [companyId], references: [id], onDelete: Cascade)
+  companyId String  @map("company_id")
+
+  @@unique([dayOfWeek, companyId])
+  @@map("opening_hours")
 }
 
 model Review {
@@ -255,6 +269,7 @@ model Court {
 model Booking {
   id        String   @id @default(uuid())
   dateTime  DateTime
+  price     Float
   createdAt DateTime @default(now()) @map("created_at")
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -291,11 +306,12 @@ model Invite {
 }
 
 model Availability {
-  id        String   @id @default(uuid())
-  dayOfWeek Int
-  startTime String
-  endTime   String
-  createdAt DateTime @default(now()) @map("created_at")
+  id         String   @id @default(uuid())
+  dayOfWeek  Int
+  startTime  String
+  endTime    String
+  isPeakHour Boolean  @default(false)
+  createdAt  DateTime @default(now()) @map("created_at")
 
   court   Court  @relation(fields: [courtId], references: [id], onDelete: Cascade)
   courtId String @map("court_id")

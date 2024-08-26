@@ -15,7 +15,7 @@ import { EventCard } from "@/components/ui/EventCard";
 import { MyCity } from "@/components/ui/MyCity";
 import { SportTypeBadge } from "@/components/ui/SportTypeBadge";
 import { type Company, type Event, SportTypeSchema } from "@/schemas";
-import LocalityOptionsModal from "./locality-options-modal";
+import LocalityOptionsModal from "@/components/modal/locality-options-modal";
 
 const companies: Company[] = [
 	{
