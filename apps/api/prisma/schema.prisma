@@ -10,7 +10,7 @@ datasource db {
 generator zod {
   provider                         = "zod-prisma-types"
   output                           = "../../../data/schemas"
-  createInputTypes                 = false
+  createInputTypes                 = true
   createModelTypes                 = true
   addInputTypeValidation           = false
   createOptionalDefaultValuesTypes = false

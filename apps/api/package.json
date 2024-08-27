@@ -1,36 +1,26 @@
 {
-  "name": "@esporte-ja/api",
-  "version": "1.0.0",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "tsx ./src/index.ts",
-    "dev": "tsx watch ./src/index.ts",
-    "db:migrate": "npx prisma migrate dev",
-    "db:seed": "npx prisma db seed",
-    "db:reset": "npx prisma migrate reset --force",
-    "db:generate": "npx prisma generate",
-    "db:studio": "npx prisma studio"
-  },
-  "author": "Guilherme Michels",
-  "license": "ISC",
-  "description": "",
-  "dependencies": {
-    "@esporte-ja/eslint-config": "workspace:*",
-    "@esporte-ja/prettier": "workspace:*",
-    "@esporte-ja/ts-config": "workspace:*",
-    "@faker-js/faker": "^8.4.1",
-    "@prisma/client": "^5.18.0",
-    "@prisma/extension-accelerate": "^1.1.0",
-    "@trpc/server": "^10.45.2",
-    "bcryptjs": "^2.4.3",
-    "zod": "^3.23.8",
-    "zod-prisma-types": "^3.1.8"
-  },
-  "devDependencies": {
-    "@types/node": "^22.4.2",
-    "prisma": "^5.18.0",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.5.4"
-  }
+	"name": "api",
+	"version": "1.0.0",
+	"description": "",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"dev": "tsx index.ts",
+		"db:migrate": "prisma migrate dev",
+		"db:studio": "prisma studio",
+		"db:seed": "tsx prisma/seed.ts"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"devDependencies": {
+		"prisma": "^5.19.0",
+		"tsx": "^4.19.0"
+	},
+	"dependencies": {
+		"@prisma/client": "5.19.0",
+		"@trpc/client": "10.29.1",
+		"@trpc/server": "10.29.1",
+		"bcrypt": "^5.1.1",
+		"zod-prisma-types": "^3.1.8"
+	}
 }
