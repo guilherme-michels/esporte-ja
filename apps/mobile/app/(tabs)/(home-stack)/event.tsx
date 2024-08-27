@@ -20,6 +20,8 @@ const event: Event = {
 	description:
 		"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus.",
 	type: "TOURNAMENT",
+	capacity: 16,
+	registeredCount: 16,
 };
 
 export default function EventScreen() {
@@ -118,7 +120,7 @@ export default function EventScreen() {
 								marginTop: 40,
 								justifyContent: "center",
 							}}
-							onPress={() => router.push("/(tabs)/(home-stack)/find-players")}
+							onPress={() => router.push("/(home-stack)/find-players")}
 						>
 							<View className="ml-2">
 								<Text className="text-zinc-500 text-sm">

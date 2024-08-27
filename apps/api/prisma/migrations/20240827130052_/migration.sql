@@ -33,8 +33,30 @@ CREATE TABLE "events" (
     "company_id" TEXT NOT NULL,
     "dateTime" TIMESTAMP(3) NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "capacity" INTEGER NOT NULL,
+    "registeredCount" INTEGER NOT NULL,
 
     CONSTRAINT "events_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "prizes" (
+    "id" TEXT NOT NULL,
+    "position" INTEGER NOT NULL,
+    "amount" DOUBLE PRECISION NOT NULL,
+    "event_id" TEXT NOT NULL,
+
+    CONSTRAINT "prizes_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "event_rules" (
+    "id" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "value" TEXT NOT NULL,
+    "event_id" TEXT NOT NULL,
+
+    CONSTRAINT "event_rules_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -85,18 +107,69 @@ CREATE TABLE "cities" (
 );
 
 -- CreateTable
+CREATE TABLE "company_teachers" (
+    "id" TEXT NOT NULL,
+    "joined_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "company_id" TEXT NOT NULL,
+    "teacher_id" TEXT NOT NULL,
+
+    CONSTRAINT "company_teachers_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "teachers" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "bio" TEXT,
+    "avatar_img" TEXT,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "teachers_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "companies" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "slug" TEXT NOT NULL,
     "domain" TEXT,
-    "avatar_url" TEXT,
+    "logo_img" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
     "owner_id" TEXT NOT NULL,
     "city_id" TEXT,
+    "address_id" TEXT,
 
     CONSTRAINT "companies_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "addresses" (
+    "id" TEXT NOT NULL,
+    "street" TEXT NOT NULL,
+    "number" TEXT,
+    "complement" TEXT,
+    "district" TEXT NOT NULL,
+    "city" TEXT NOT NULL,
+    "state" TEXT NOT NULL,
+    "country" TEXT NOT NULL,
+    "postal_code" TEXT NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "addresses_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "opening_hours" (
+    "id" TEXT NOT NULL,
+    "dayOfWeek" INTEGER NOT NULL,
+    "opensAt" TEXT NOT NULL,
+    "closesAt" TEXT NOT NULL,
+    "company_id" TEXT NOT NULL,
+
+    CONSTRAINT "opening_hours_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -130,9 +203,11 @@ CREATE TABLE "courts" (
 CREATE TABLE "bookings" (
     "id" TEXT NOT NULL,
     "dateTime" TIMESTAMP(3) NOT NULL,
+    "price" DOUBLE PRECISION NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "user_id" TEXT NOT NULL,
     "court_id" TEXT NOT NULL,
+    "teacherId" TEXT,
 
     CONSTRAINT "bookings_pkey" PRIMARY KEY ("id")
 );
@@ -155,6 +230,7 @@ CREATE TABLE "availability" (
     "dayOfWeek" INTEGER NOT NULL,
     "startTime" TEXT NOT NULL,
     "endTime" TEXT NOT NULL,
+    "isPeakHour" BOOLEAN NOT NULL DEFAULT false,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "court_id" TEXT NOT NULL,
 
@@ -211,10 +287,19 @@ CREATE UNIQUE INDEX "profile_event_participations_profile_id_event_id_key" ON "p
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "company_teachers_company_id_teacher_id_key" ON "company_teachers"("company_id", "teacher_id");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "companies_slug_key" ON "companies"("slug");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "companies_domain_key" ON "companies"("domain");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "companies_address_id_key" ON "companies"("address_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "opening_hours_dayOfWeek_company_id_key" ON "opening_hours"("dayOfWeek", "company_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "invites_bookingId_key" ON "invites"("bookingId");
@@ -238,6 +323,12 @@ ALTER TABLE "profiles" ADD CONSTRAINT "profiles_user_id_fkey" FOREIGN KEY ("user
 ALTER TABLE "events" ADD CONSTRAINT "events_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "companies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "prizes" ADD CONSTRAINT "prizes_event_id_fkey" FOREIGN KEY ("event_id") REFERENCES "events"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "event_rules" ADD CONSTRAINT "event_rules_event_id_fkey" FOREIGN KEY ("event_id") REFERENCES "events"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "profile_event_participations" ADD CONSTRAINT "profile_event_participations_profile_id_fkey" FOREIGN KEY ("profile_id") REFERENCES "profiles"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -247,10 +338,22 @@ ALTER TABLE "profile_event_participations" ADD CONSTRAINT "profile_event_partici
 ALTER TABLE "trophies" ADD CONSTRAINT "trophies_profile_id_fkey" FOREIGN KEY ("profile_id") REFERENCES "profiles"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "company_teachers" ADD CONSTRAINT "company_teachers_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "companies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "company_teachers" ADD CONSTRAINT "company_teachers_teacher_id_fkey" FOREIGN KEY ("teacher_id") REFERENCES "teachers"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "companies" ADD CONSTRAINT "companies_owner_id_fkey" FOREIGN KEY ("owner_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "companies" ADD CONSTRAINT "companies_city_id_fkey" FOREIGN KEY ("city_id") REFERENCES "cities"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "companies" ADD CONSTRAINT "companies_address_id_fkey" FOREIGN KEY ("address_id") REFERENCES "addresses"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "opening_hours" ADD CONSTRAINT "opening_hours_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "companies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "reviews" ADD CONSTRAINT "reviews_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -266,6 +369,9 @@ ALTER TABLE "bookings" ADD CONSTRAINT "bookings_user_id_fkey" FOREIGN KEY ("user
 
 -- AddForeignKey
 ALTER TABLE "bookings" ADD CONSTRAINT "bookings_court_id_fkey" FOREIGN KEY ("court_id") REFERENCES "courts"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "bookings" ADD CONSTRAINT "bookings_teacherId_fkey" FOREIGN KEY ("teacherId") REFERENCES "teachers"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "invites" ADD CONSTRAINT "invites_author_id_fkey" FOREIGN KEY ("author_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;

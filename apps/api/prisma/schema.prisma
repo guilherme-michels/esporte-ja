@@ -209,14 +209,34 @@ model Company {
   city   City?   @relation(fields: [cityId], references: [id])
   cityId String? @map("city_id")
 
-  events Event[] @relation("CompanyEvents")
+  address   Address? @relation(fields: [addressId], references: [id])
+  addressId String?  @unique @map("address_id")
 
+  events         Event[]          @relation("CompanyEvents")
   reviews        Review[]
   CompanyTeacher CompanyTeacher[]
 
   openingHours OpeningHours[] @relation("CompanyOpeningHours")
 
   @@map("companies")
+}
+
+model Address {
+  id         String   @id @default(uuid())
+  street     String
+  number     String?
+  complement String?
+  district   String
+  city       String
+  state      String
+  country    String
+  postalCode String   @map("postal_code")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  company Company?
+
+  @@map("addresses")
 }
 
 model OpeningHours {

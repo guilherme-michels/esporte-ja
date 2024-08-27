@@ -1,4 +1,5 @@
 import { CustomHeaderOptions } from "@/components/header/CustomHeaderOptions";
+import { Ionicons } from "@expo/vector-icons";
 import { Stack, useRouter } from "expo-router";
 
 export default function HomeStack() {
@@ -10,9 +11,35 @@ export default function HomeStack() {
 
 			<Stack.Screen
 				name="company"
-				options={CustomHeaderOptions({
-					title: "Centro esportivo",
-					onPress: () => router.back(),
+				options={({ navigation }) => ({
+					title: "Centros esportivos",
+					headerShown: true,
+					headerStyle: {
+						backgroundColor: "#3b82f6",
+					},
+					headerTintColor: "#3b82f6 ",
+					headerTitleStyle: {
+						color: "#fff",
+						fontSize: 14,
+					},
+					headerLeft: () => (
+						<Ionicons
+							name={"arrow-back-outline"}
+							size={24}
+							color={"#fff"}
+							onPress={() => router.back()}
+						/>
+					),
+					headerRight: () => (
+						<Ionicons
+							name={"cash-outline"}
+							size={24}
+							color={"#6fdf24"}
+							onPress={() => {
+								navigation.setParams({ showPricesModal: Date.now() });
+							}}
+						/>
+					),
 				})}
 			/>
 
@@ -44,6 +71,14 @@ export default function HomeStack() {
 				name="search-companies"
 				options={CustomHeaderOptions({
 					title: "Centros esportivos",
+					onPress: () => router.back(),
+				})}
+			/>
+
+			<Stack.Screen
+				name="find-players"
+				options={CustomHeaderOptions({
+					title: "Encontre jogadores",
 					onPress: () => router.back(),
 				})}
 			/>

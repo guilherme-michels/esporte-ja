@@ -5,12 +5,11 @@ import {
 	FlatList,
 	TouchableOpacity,
 	View,
-	type ListRenderItemInfo,
 	ScrollView,
 } from "react-native";
-import { format, addMinutes } from "date-fns";
-import { Calendar, type DateData } from "react-native-calendars";
 import { Ionicons } from "@expo/vector-icons";
+import { format, addDays } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 const initialAvailableSlots = [
 	{ id: 1, time: "08:00", duration: 60 },
@@ -38,9 +37,19 @@ export default function BookingScreen() {
 		});
 	};
 
+	const handlePrevDay = () => {
+		setSelectedDay((prevDay) => addDays(prevDay, -1));
+	};
+
+	const handleNextDay = () => {
+		setSelectedDay((prevDay) => addDays(prevDay, 1));
+	};
+
 	const renderTimeSlot = ({
 		item,
-	}: ListRenderItemInfo<{ id: number; time: string; duration: number }>) => (
+	}: {
+		item: { id: number; time: string; duration: number };
+	}) => (
 		<TouchableOpacity
 			onPress={() => toggleSlotSelection(item.id)}
 			style={{
@@ -68,14 +77,7 @@ export default function BookingScreen() {
 							selectedSlots.includes(item.id) ? "text-white" : "text-black"
 						}`}
 					>
-						{item.time} às{" "}
-						{format(
-							addMinutes(
-								new Date(`1970-01-01T${item.time}:00Z`),
-								item.duration,
-							),
-							"HH:mm",
-						)}
+						{item.time} às {formatTime(item.time, item.duration)}
 					</Text>
 				</View>
 
@@ -94,11 +96,33 @@ export default function BookingScreen() {
 		</TouchableOpacity>
 	);
 
+	const formatTime = (time: string, duration: number) => {
+		const [hours, minutes] = time.split(":").map(Number);
+		const endTime = new Date();
+		endTime.setHours(hours);
+		endTime.setMinutes(minutes + duration);
+		return `${String(endTime.getHours()).padStart(2, "0")}:${String(
+			endTime.getMinutes(),
+		).padStart(2, "0")}`;
+	};
+
 	return (
 		<SafeAreaView className="flex-1 bg-gray-100">
 			<View className="px-4 bg-white size-full relative">
+				<View className="flex flex-row justify-between items-center my-4">
+					<TouchableOpacity onPress={handlePrevDay}>
+						<Ionicons name="chevron-back" size={24} color="black" />
+					</TouchableOpacity>
+					<Text className="text-lg font-bold">
+						{format(selectedDay, "EEEE, dd MMMM", { locale: ptBR })}
+					</Text>
+					<TouchableOpacity onPress={handleNextDay}>
+						<Ionicons name="chevron-forward" size={24} color="black" />
+					</TouchableOpacity>
+				</View>
+
 				{selectedSlots.length > 0 && (
-					<View className="absolute top-4 left-4 right-4 p-4 bg-blue-500 z-10 rounded-lg flex flex-row justify-between items-center">
+					<View className="absolute bottom-4 left-4 right-4 p-4 bg-blue-500 z-10 rounded-lg flex flex-row justify-between items-center">
 						<View className="flex flex-row justify-between items-center gap-2">
 							<Ionicons name="calendar-outline" size={20} color={"#fff"} />
 							<Text className="text-white font-bold">
@@ -112,34 +136,12 @@ export default function BookingScreen() {
 					</View>
 				)}
 
-				<ScrollView className="h-full">
-					<Calendar
-						current={format(selectedDay, "yyyy-MM-dd")}
-						onDayPress={(day: DateData) =>
-							setSelectedDay(new Date(day.dateString))
-						}
-						markedDates={{
-							[format(selectedDay, "yyyy-MM-dd")]: {
-								selected: true,
-								selectedColor: "#00adf5",
-							},
-						}}
-						theme={{
-							selectedDayBackgroundColor: "#00adf5",
-							todayTextColor: "#00adf5",
-						}}
-					/>
-
-					<Text className="mt-5 mb-2 text-lg font-bold">
-						{format(selectedDay, "MMMM dd, yyyy")}
-					</Text>
-
-					<FlatList
-						data={initialAvailableSlots}
-						keyExtractor={(item) => item.id.toString()}
-						renderItem={renderTimeSlot}
-					/>
-				</ScrollView>
+				<FlatList
+					data={initialAvailableSlots}
+					keyExtractor={(item) => item.id.toString()}
+					renderItem={renderTimeSlot}
+					contentContainerStyle={{ paddingBottom: 100 }}
+				/>
 			</View>
 		</SafeAreaView>
 	);
