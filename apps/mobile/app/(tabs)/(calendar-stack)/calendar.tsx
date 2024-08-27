@@ -92,15 +92,9 @@ export default function CalendarScreen() {
 	};
 
 	const renderHeader = () => (
-		<View className="flex-row justify-between py-2 px-4">
+		<View className="flex-row justify-between pb-4">
 			{TABS.map((tab) => (
-				<TouchableOpacity
-					key={tab}
-					onPress={() => setActiveTab(tab)}
-					style={{
-						paddingVertical: 8,
-					}}
-				>
+				<TouchableOpacity key={tab} onPress={() => setActiveTab(tab)}>
 					<View
 						className={`${
 							activeTab === tab ? "bg-blue-500" : "bg-zinc-100"
@@ -121,7 +115,7 @@ export default function CalendarScreen() {
 
 	return (
 		<SafeAreaView className="flex-1 bg-white h-full">
-			<View style={{ height: screenHeight }} className="bg-white">
+			<View style={{ height: screenHeight }} className="bg-white p-4">
 				<FlatList
 					ListHeaderComponent={renderHeader}
 					data={filteredBookings}

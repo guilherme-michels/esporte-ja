@@ -40,7 +40,10 @@ export default function EventScreen() {
 	return (
 		<SafeAreaView className="flex-1">
 			<View className="px-4 bg-white size-full">
-				<ScrollView className="h-full">
+				<ScrollView
+					className="h-full"
+					contentContainerStyle={{ paddingBottom: 80 }}
+				>
 					<View className="mt-4 bg-white rounded-lg shadow-md mb-4">
 						<Image
 							source={{
@@ -114,6 +117,20 @@ export default function EventScreen() {
 								</Text>
 							</View>
 						</View>
+
+						<TouchableOpacity
+							style={{
+								backgroundColor: "#3b82f6",
+								padding: 16,
+								borderRadius: 8,
+								marginTop: 40,
+							}}
+							onPress={() => console.log("Inscrever-se no evento")}
+						>
+							<Text className="text-white font-semibold text-center text-lg">
+								Inscrever-se no Evento
+							</Text>
+						</TouchableOpacity>
 
 						<TouchableOpacity
 							style={{
