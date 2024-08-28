@@ -52,7 +52,7 @@ const appRouter = t.router({
 			.mutation(async ({ input }) => {
 				return await prisma.event.delete({ where: { id: input.id } });
 			}),
-		getAllEvents: publicProcedure
+		getAll: publicProcedure
 			.input(
 				z.object({
 					limit: z.number().min(1).max(100).optional().default(10),
@@ -124,13 +124,17 @@ const appRouter = t.router({
 		}),
 		getAll: publicProcedure
 			.input(
-				z.object({
-					limit: z.number().min(1).max(100).optional().default(10),
-					cursor: z.string().optional(),
-				}),
+				z
+					.object({
+						limit: z.number().min(1).max(100).optional().default(10),
+						cursor: z.string().optional(),
+					})
+					.optional(),
 			)
 			.query(async ({ input }) => {
-				const { limit, cursor } = input;
+				const limit = input?.limit ?? 10;
+				const cursor = input?.cursor;
+
 				const companies = await prisma.company.findMany({
 					take: limit + 1,
 					cursor: cursor ? { id: cursor } : undefined,

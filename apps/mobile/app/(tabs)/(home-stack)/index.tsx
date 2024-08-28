@@ -1,78 +1,16 @@
-import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import {
-	FlatList,
-	SafeAreaView,
-	Text,
-	TouchableOpacity,
-	View,
-} from "react-native";
+import { FlatList, SafeAreaView, View, ActivityIndicator } from "react-native";
 
 import { CompanyCard } from "@/components/ui/CompanyCard";
 import { EventCard } from "@/components/ui/EventCard";
 import { MyCity } from "@/components/ui/MyCity";
 import { SportTypeBadge } from "@/components/ui/SportTypeBadge";
-import { type Company, type Event, SportTypeSchema } from "@/schemas";
+import { SportTypeSchema } from "@/schemas";
 import LocalityOptionsModal from "@/components/modal/locality-options-modal";
-
-const companies: Company[] = [
-	{
-		id: "1",
-		name: "Senhor Padel",
-		slug: "empresa-a",
-		logoImg:
-			"https://scontent.fcxj13-1.fna.fbcdn.net/v/t39.30808-6/271790296_477827067023970_4230423309320112495_n.jpg?_nc_cat=100&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=x__kByBpr1YQ7kNvgF8qM9u&_nc_ht=scontent.fcxj13-1.fna&oh=00_AYDAHG1FaGMF9xHEPptY5waPZfYbgIhBkwBsNbYJKS_AyA&oe=66CD72E4",
-		cityId: "1",
-		createdAt: new Date(),
-		updatedAt: new Date(),
-		domain: "empresa-a.com",
-		ownerId: "1",
-		addressId: "1",
-	},
-	{
-		id: "2",
-		name: "Arena 08",
-		slug: "empresa-a",
-		logoImg:
-			"https://scontent.fcxj13-1.fna.fbcdn.net/v/t39.30808-6/275041833_112047398079581_4432519264775942829_n.jpg?_nc_cat=110&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=o9iqd5D8I0gQ7kNvgGt3bp2&_nc_ht=scontent.fcxj13-1.fna&oh=00_AYAjHSyWo5lPXz4H0V4J283Q7eewNhwtBLnHGYb8JA-y-A&oe=66CD87D2",
-		cityId: "1",
-		createdAt: new Date(),
-		updatedAt: new Date(),
-		domain: "empresa-a.com",
-		ownerId: "1",
-		addressId: "1",
-	},
-];
-
-const events: Event[] = [
-	{
-		companyId: "1",
-		createdAt: new Date(),
-		date: new Date(),
-		id: "1",
-		title: "Torneio de Beach Tennis - Dinápoli",
-		dateTime: new Date(),
-		description:
-			"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus.",
-		type: "TOURNAMENT",
-		capacity: 16,
-		registeredCount: 16,
-	},
-	{
-		companyId: "2",
-		createdAt: new Date(),
-		date: new Date(),
-		id: "2",
-		title: "Evento A",
-		dateTime: new Date(),
-		description:
-			"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus.",
-		type: "TOURNAMENT",
-		capacity: 16,
-		registeredCount: 16,
-	},
-];
+import { ResultSeeMore } from "@/components/ui/ResultSeeMore";
+import { ChangeLocality } from "@/components/ui/ChangeLocality";
+import { trpc } from "@/api";
 
 export default function HomeScreen() {
 	const [location, setLocation] = useState("Lajeado, RS");
@@ -85,42 +23,38 @@ export default function HomeScreen() {
 		null,
 	);
 
+	const { data: companiesData, isLoading: isLoadingCompanies } =
+		trpc.company.getAll.useQuery({
+			cursor: "",
+			limit: 10,
+		});
+
+	const { data: eventsData, isLoading: isLoadingEvents } =
+		trpc.event.getAll.useQuery({
+			cursor: "",
+			limit: 2,
+		});
+
+	if (isLoadingCompanies || isLoadingEvents) {
+		return (
+			<SafeAreaView className="flex-1 justify-center items-center bg-white">
+				<ActivityIndicator size="large" color="#0000ff" />
+			</SafeAreaView>
+		);
+	}
+
 	return (
 		<SafeAreaView className="flex-1">
 			<View className="size-full bg-white">
 				<FlatList
-					data={companies}
+					data={companiesData?.companies}
 					keyExtractor={(company) => company.id}
 					ListHeaderComponent={
 						<View className="p-4">
-							<View className="flex-row justify-between w-full bg-blue-500 p-4 rounded-lg">
-								<View className="flex-row justify-between items-center gap-1">
-									<Ionicons
-										name={"navigate-circle-outline"}
-										size={16}
-										color={"#fff"}
-									/>
-									<Text className="text-white text-xl">{location}</Text>
-								</View>
-
-								<TouchableOpacity
-									style={{
-										display: "flex",
-										flexDirection: "row",
-										gap: 2,
-										justifyContent: "center",
-										alignItems: "center",
-									}}
-									onPress={() => setIsLocalityOptionsModalOpened(true)}
-								>
-									<Text className="text-sm font-bold text-white">ALTERAR</Text>
-									<Ionicons
-										name={"arrow-forward-outline"}
-										size={16}
-										color={"#fff"}
-									/>
-								</TouchableOpacity>
-							</View>
+							<ChangeLocality
+								location={location}
+								onPress={() => setIsLocalityOptionsModalOpened(true)}
+							/>
 
 							<View className="mt-6">
 								<FlatList
@@ -144,32 +78,15 @@ export default function HomeScreen() {
 							</View>
 
 							<View className="mt-4">
-								<View className="flex-row justify-between w-full mb-2">
-									<Text className="text-base font-extralight">
-										Resultados encontrados
-									</Text>
-									<TouchableOpacity
-										style={{
-											display: "flex",
-											flexDirection: "row",
-											gap: 2,
-											justifyContent: "center",
-											alignItems: "center",
-										}}
-										onPress={() =>
-											router.push("/(tabs)/(home-stack)/search-companies")
-										}
-									>
-										<Text className="text-xs font-bold">Ver mais</Text>
-										<Ionicons
-											name={"arrow-forward-outline"}
-											size={16}
-											color={"#000"}
-										/>
-									</TouchableOpacity>
-								</View>
+								<ResultSeeMore
+									label="Resultados encontrados"
+									onPress={() =>
+										router.push("/(tabs)/(home-stack)/search-companies")
+									}
+								/>
+
 								<FlatList
-									data={companies}
+									data={companiesData?.companies}
 									keyExtractor={(company) => company.id}
 									renderItem={({ item: company }) => (
 										<CompanyCard
@@ -189,33 +106,15 @@ export default function HomeScreen() {
 							<MyCity />
 
 							<View className="mt-12">
-								<View className="flex-row justify-between w-full mb-2">
-									<Text className="text-base font-extralight">
-										Próximos eventos em LAJEADO
-									</Text>
-									<TouchableOpacity
-										style={{
-											display: "flex",
-											flexDirection: "row",
-											gap: 2,
-											justifyContent: "center",
-											alignItems: "center",
-										}}
-										onPress={() =>
-											router.push("/(tabs)/(home-stack)/search-events")
-										}
-									>
-										<Text className="text-xs font-bold">Ver mais</Text>
-										<Ionicons
-											name={"arrow-forward-outline"}
-											size={16}
-											color={"#000"}
-										/>
-									</TouchableOpacity>
-								</View>
+								<ResultSeeMore
+									label="Próximos eventos em LAJEADO"
+									onPress={() =>
+										router.push("/(tabs)/(home-stack)/search-events")
+									}
+								/>
 
 								<FlatList
-									data={events.slice(0, 2)}
+									data={eventsData?.events}
 									keyExtractor={(event) => event.id}
 									renderItem={({ item: event }) => (
 										<EventCard

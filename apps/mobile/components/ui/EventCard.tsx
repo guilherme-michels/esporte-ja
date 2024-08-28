@@ -1,6 +1,7 @@
 import { Image, Text, TouchableOpacity, View } from "react-native";
 
 import type { Event } from "@/schemas";
+import { formatDate } from "@/utils/utils";
 
 interface EventCardProps {
 	event: Event;
@@ -32,7 +33,7 @@ export const EventCard = ({ event, onPress }: EventCardProps) => {
 			<View className="flex-1 ml-4 mt-4">
 				<Text className="text-lg font-bold text-gray-900">{event.title}</Text>
 				<Text className="text-sm text-gray-700 mt-1">
-					{event.dateTime.toLocaleDateString()}
+					{formatDate(event.dateTime)}
 				</Text>
 				<Text className="text-sm text-gray-500 mt-1">{event.description}</Text>
 			</View>
