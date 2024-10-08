@@ -1,5 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import { Modal, Text, TouchableOpacity, View } from "react-native";
+import SelectDropdown from 'react-native-select-dropdown';
+import { StyleSheet } from "react-native";
 
 interface LocalityOptionsModalProps {
   opened: boolean;
@@ -10,6 +12,33 @@ export default function LocalityOptionsModal({
   opened,
   onClose,
 }: LocalityOptionsModalProps) {
+
+  //TODO: DINAMIZAR
+  const countryStates = [
+    {uf: 'RS'},
+    {uf: 'SC'},
+  ];
+
+  const [cities, setCities] = useState([
+    {name: 'Selecione um estado'}
+  ]);
+
+  const loadCities = (uf: string) => {
+    
+    //TODO: DINAMIZAR
+    if (uf === 'RS') {
+      setCities([
+        {name: 'Lajeado'},
+        {name: 'Estrela'},
+      ]);
+    } else {
+      setCities([
+        {name: 'Florianópolis'},
+        {name: 'Blumenau'},
+      ]);
+    }
+  };
+
   return (
     <Modal
       animationType="fade"
@@ -26,14 +55,60 @@ export default function LocalityOptionsModal({
           <View className="mb-6">
             <Text className="text-gray-600 mb-2">Selecione seu estado</Text>
             <TouchableOpacity className="border border-gray-300 rounded p-2">
-              <Text className="text-gray-700">Estado</Text>
+            <SelectDropdown
+              data={countryStates}
+              onSelect={(selectedItem, index) => {
+                loadCities(selectedItem.uf);
+              }}
+              renderButton={(selectedItem, isOpened) => {
+                return (
+                  <View style={styles.dropdownButtonStyle}>
+                    <Text style={styles.dropdownButtonTxtStyle}>
+                      {(selectedItem && selectedItem.uf) || 'Selecione'}
+                    </Text>
+                  </View>
+                );
+              }}
+              renderItem={(item, index, isSelected) => {
+                return (
+                  <View style={{...styles.dropdownItemStyle, ...(isSelected && {backgroundColor: '#D2D9DF'})}}>
+                    <Text style={styles.dropdownItemTxtStyle}>{item.uf}</Text>
+                  </View>
+                );
+              }}
+              showsVerticalScrollIndicator={false}
+              dropdownStyle={styles.dropdownMenuStyle}
+            />
             </TouchableOpacity>
           </View>
 
           <View className="mb-6">
             <Text className="text-gray-600 mb-2">Selecione sua cidade</Text>
             <TouchableOpacity className="border border-gray-300 rounded p-2">
-              <Text className="text-gray-700">Cidade</Text>
+            <SelectDropdown
+              data={cities}
+              onSelect={(selectedItem, index) => {
+                console.log(selectedItem, index);
+              }}
+              renderButton={(selectedItem, isOpened) => {
+                return (
+                  <View style={styles.dropdownButtonStyle}>
+                    <Text style={styles.dropdownButtonTxtStyle}>
+                      {(selectedItem && selectedItem.name) || 'Selecione'}
+                    </Text>
+                  </View>
+                );
+              }}
+              renderItem={(item, index, isSelected) => {
+                return (
+                  <View style={{...styles.dropdownItemStyle, ...(isSelected && {backgroundColor: '#D2D9DF'})}}>
+                    <Text style={styles.dropdownItemTxtStyle}>{item.name}</Text>
+                  </View>
+                );
+              }}
+              showsVerticalScrollIndicator={false}
+              dropdownStyle={styles.dropdownMenuStyle}
+              />
             </TouchableOpacity>
           </View>
 
@@ -73,3 +148,51 @@ export default function LocalityOptionsModal({
     </Modal>
   );
 }
+
+const styles = StyleSheet.create({
+  dropdownButtonStyle: {
+    width: 200,
+    height: 50,
+    backgroundColor: '#E9ECEF',
+    borderRadius: 12,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+  },
+  dropdownButtonTxtStyle: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: '500',
+    color: '#151E26',
+  },
+  dropdownButtonArrowStyle: {
+    fontSize: 28,
+  },
+  dropdownButtonIconStyle: {
+    fontSize: 28,
+    marginRight: 8,
+  },
+  dropdownMenuStyle: {
+    backgroundColor: '#E9ECEF',
+    borderRadius: 8,
+  },
+  dropdownItemStyle: {
+    width: '100%',
+    flexDirection: 'row',
+    paddingHorizontal: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  dropdownItemTxtStyle: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: '500',
+    color: '#151E26',
+  },
+  dropdownItemIconStyle: {
+    fontSize: 28,
+    marginRight: 8,
+  },
+});
