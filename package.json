@@ -1,13 +1,8 @@
 {
-  "name": "esporte-ja",
-  "version": "1.0.0",
-  "private": true,
-  "workspaces": {
-    "packages": [
-      "apps/api*",
-      "apps/admin*",
-      "config/*",
-      "data/*"
-    ]
-  }
+	"name": "esporte-ja",
+	"version": "1.0.0",
+	"private": true,
+	"workspaces": {
+		"packages": ["apps/api*", "apps/admin*", "config/*", "data/*"]
+	}
 }

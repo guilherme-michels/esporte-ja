@@ -1,14 +1,14 @@
-import { initTRPC } from "@trpc/server";
-import { z } from "zod";
-import { createHTTPServer } from "@trpc/server/adapters/standalone";
 import { PrismaClient } from "@prisma/client";
+import { initTRPC } from "@trpc/server";
+import { createHTTPServer } from "@trpc/server/adapters/standalone";
+import { z } from "zod";
 import {
-	EventSchema,
-	UserSchema,
-	CourtSchema,
-	ProfileSchema,
 	BookingSchema,
+	CourtSchema,
+	EventSchema,
 	NotificationSchema,
+	ProfileSchema,
+	UserSchema,
 } from "./schemas";
 
 const prisma = new PrismaClient();
@@ -76,6 +76,56 @@ const appRouter = t.router({
 					const nextItem = events.pop();
 					nextCursor = nextItem?.id;
 				}
+
+				return {
+					events,
+					nextCursor,
+				};
+			}),
+		search: publicProcedure
+			.input(
+				z.object({
+					query: z.string(),
+					limit: z.number().min(1).max(100).optional().default(10),
+					cursor: z.string().optional(),
+				}),
+			)
+			.query(async ({ input }) => {
+				const { query, limit, cursor } = input;
+				console.log("Recebida busca de eventos com query:", query); // Log para depuração
+
+				const events = await prisma.event.findMany({
+					where: {
+						OR: [
+							{
+								name: {
+									contains: query,
+									mode: "insensitive",
+								},
+							},
+							{
+								description: {
+									contains: query,
+									mode: "insensitive",
+								},
+							},
+							// Adicione outros campos relevantes para a busca, se necessário
+						],
+					},
+					take: limit + 1,
+					cursor: cursor ? { id: cursor } : undefined,
+					orderBy: {
+						dateTime: "asc", // Ordena por data do evento, ajuste conforme necessário
+					},
+				});
+
+				let nextCursor: typeof cursor | undefined = undefined;
+				if (events.length > limit) {
+					const nextItem = events.pop();
+					nextCursor = nextItem?.id;
+				}
+
+				console.log("Eventos encontrados:", events.length); // Log para depuração
 
 				return {
 					events,
@@ -175,6 +225,45 @@ const appRouter = t.router({
 			});
 			return { success: true };
 		}),
+		search: publicProcedure
+			.input(
+				z.object({
+					query: z.string(),
+					limit: z.number().min(1).max(100).optional().default(10),
+					cursor: z.string().optional(),
+				}),
+			)
+			.query(async ({ input }) => {
+				const { query, limit, cursor } = input;
+				console.log("Recebida busca com query:", query);
+
+				const companies = await prisma.company.findMany({
+					where: {
+						name: {
+							contains: query,
+							mode: "insensitive",
+						},
+					},
+					take: limit + 1,
+					cursor: cursor ? { id: cursor } : undefined,
+					orderBy: {
+						name: "asc",
+					},
+				});
+
+				let nextCursor: typeof cursor | undefined = undefined;
+				if (companies.length > limit) {
+					const nextItem = companies.pop();
+					nextCursor = nextItem?.id;
+				}
+
+				console.log("Empresas encontradas:", companies.length); // Log para depuração
+
+				return {
+					companies,
+					nextCursor,
+				};
+			}),
 	}),
 
 	// Rotas de Quadra

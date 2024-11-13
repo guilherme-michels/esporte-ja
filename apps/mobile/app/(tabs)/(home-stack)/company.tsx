@@ -1,7 +1,12 @@
-import React, { useEffect, useRef, useState } from "react";
+import CompanyPricesModal from "@/components/modal/company-prices-modal";
+import { SportTypeBadge } from "@/components/ui/SportTypeBadge";
+import { type Company, SportTypeSchema } from "@/schemas";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useRef, useState } from "react";
 import {
+	ActivityIndicator,
 	Dimensions,
 	FlatList,
 	Image,
@@ -12,14 +17,10 @@ import {
 	TouchableOpacity,
 	View,
 } from "react-native";
+import { useSharedValue } from "react-native-reanimated";
 import Carousel, {
 	type ICarouselInstance,
 } from "react-native-reanimated-carousel";
-import { LinearGradient } from "expo-linear-gradient";
-import { SportTypeBadge } from "@/components/ui/SportTypeBadge";
-import { type Company, SportTypeSchema } from "@/schemas";
-import { useSharedValue } from "react-native-reanimated";
-import CompanyPricesModal from "@/components/modal/company-prices-modal";
 
 const company: Company = {
 	id: "1",
@@ -94,6 +95,8 @@ export default function CompanyScreen() {
 		);
 	}
 
+	const [imageLoading, setImageLoading] = useState(true);
+
 	return (
 		<SafeAreaView className="flex-1">
 			<ScrollView className="bg-white h-full">
@@ -106,12 +109,17 @@ export default function CompanyScreen() {
 
 						<Text className="text-zinc-600 text-sm">- Lajeado, RS</Text>
 					</View>
-					<Image
-						// biome-ignore lint/style/noNonNullAssertion: <explanation>
-						source={{ uri: company.logoImg! }}
-						className="w-full h-60 rounded-lg"
-						resizeMode="cover"
-					/>
+					<View className="w-full h-[200px] relative">
+						<Image
+							source={{
+								uri: "https://static.wixstatic.com/media/95e081_f58d74291f504f80b127a356b576d9b5~mv2.jpg/v1/fill/w_1920,h_1280,al_c/95e081_f58d74291f504f80b127a356b576d9b5~mv2.jpg",
+							}}
+							className={"object-cover w-full h-full"}
+							alt="company-logo"
+							onLoadStart={() => setImageLoading(true)}
+							onLoadEnd={() => setImageLoading(false)}
+						/>
+					</View>
 					<View className="flex-row justify-between items-center mt-4">
 						<Text className="text-2xl font-bold">{company.name}</Text>
 						<TouchableOpacity

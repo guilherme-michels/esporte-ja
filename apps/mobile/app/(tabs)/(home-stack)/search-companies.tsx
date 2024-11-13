@@ -1,82 +1,126 @@
-import React from "react";
-import {
-	SafeAreaView,
-	Text,
-	FlatList,
-	View,
-	Image,
-	TouchableOpacity,
-} from "react-native";
 import { trpc } from "@/api";
+import { useDebounce } from "@/hooks/useDebounce";
 import { Ionicons } from "@expo/vector-icons";
-import type { Company } from "@/schemas";
+import { useRouter } from "expo-router";
+import React, { useState } from "react";
+import {
+	FlatList,
+	Image,
+	SafeAreaView,
+	ScrollView,
+	Text,
+	TextInput,
+	TouchableOpacity,
+	View,
+} from "react-native";
+import type { Company } from "../../../../api/schemas";
 
 export default function SearchCompaniesScreen() {
+	const [searchQuery, setSearchQuery] = useState("");
+	const debouncedQuery = useDebounce(searchQuery, 0);
+	const router = useRouter();
+
 	const {
-		data: companies,
-		isLoading,
-		error,
-	} = trpc.company.getAll.useQuery({ cursor: "", limit: 10 });
+		data: searchData,
+		isLoading: isSearchLoading,
+		error: searchError,
+		fetchNextPage: fetchNextSearchPage,
+		hasNextPage: hasNextSearchPage,
+	} = trpc.company.search.useInfiniteQuery(
+		{ query: debouncedQuery, limit: 10 },
+		{
+			getNextPageParam: (lastPage) => lastPage.nextCursor,
+			enabled: debouncedQuery.length > 0,
+		},
+	);
 
-	if (isLoading) {
-		return (
-			<SafeAreaView className="flex-1 bg-gray-900 justify-center items-center">
-				<Text className="text-white text-lg">Carregando empresas...</Text>
-			</SafeAreaView>
-		);
-	}
+	const {
+		data: allCompaniesData,
+		isLoading: isAllCompaniesLoading,
+		error: allCompaniesError,
+		fetchNextPage: fetchNextAllCompaniesPage,
+		hasNextPage: hasNextAllCompaniesPage,
+	} = trpc.company.getAll.useInfiniteQuery(
+		{ limit: 10 },
+		{
+			getNextPageParam: (lastPage) => lastPage.nextCursor,
+			enabled: debouncedQuery.length === 0,
+		},
+	);
 
-	if (error) {
-		return (
-			<SafeAreaView className="flex-1 bg-gray-900 justify-center items-center">
-				<Text className="text-white text-lg">
-					Erro ao carregar empresas: {error.message}
-				</Text>
-			</SafeAreaView>
-		);
-	}
+	const companies =
+		debouncedQuery.length > 0
+			? (searchData?.pages.flatMap((page) => page.companies) ?? [])
+			: (allCompaniesData?.pages.flatMap((page) => page.companies) ?? []);
+
+	const isLoading = isSearchLoading || isAllCompaniesLoading;
+	const error = searchError || allCompaniesError;
 
 	const renderCompanyItem = ({ item }: { item: Company }) => (
 		<TouchableOpacity
 			style={{
+				flex: 1,
+				margin: 8,
 				display: "flex",
 				flexDirection: "row",
-				alignItems: "center",
-				backgroundColor: "#1F2937",
-				borderRadius: 8,
-				padding: 16,
-				marginBottom: 12,
-				marginTop: 12,
+				justifyContent: "space-between",
+				alignItems: "flex-start",
+				backgroundColor: "#3b82f6",
+				padding: 12,
+				borderRadius: 12,
 			}}
+			onPress={() => router.push(`/(tabs)/(home-stack)/company?id=${item.id}`)}
 		>
 			<Image
-				source={{
-					uri: "https://scontent.fcxj13-1.fna.fbcdn.net/v/t39.30808-6/275041833_112047398079581_4432519264775942829_n.jpg?_nc_cat=110&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=o9iqd5D8I0gQ7kNvgGt3bp2&_nc_ht=scontent.fcxj13-1.fna&oh=00_AYAjHSyWo5lPXz4H0V4J283Q7eewNhwtBLnHGYb8JA-y-A&oe=66CD87D2",
-				}}
-				className="size-16 rounded-full mr-4"
+				// @ts-expect-error
+				source={{ uri: item.logoImg }}
+				className="w-16 h-16 rounded-full mr-4"
 			/>
 			<View className="flex-1">
 				<Text className="text-white text-lg font-semibold">{item.name}</Text>
-				<Text className="text-gray-400">{item.domain}</Text>
+				<Text className="text-gray-200">{item.domain}</Text>
 			</View>
 			<Ionicons name="chevron-forward" size={24} color="gray" />
 		</TouchableOpacity>
 	);
 
+	const handleLoadMore = () => {
+		if (debouncedQuery.length > 0) {
+			hasNextSearchPage && fetchNextSearchPage();
+		} else {
+			hasNextAllCompaniesPage && fetchNextAllCompaniesPage();
+		}
+	};
+
 	return (
 		<SafeAreaView className="flex-1">
-			<View className="size-full bg-white px-4">
-				<FlatList
-					data={companies?.companies}
-					renderItem={renderCompanyItem}
-					keyExtractor={(item) => item.id}
-					ListEmptyComponent={
-						<Text className="text-white text-center">
-							Nenhuma empresa encontrada.
-						</Text>
-					}
-				/>
-			</View>
+			<ScrollView className="bg-white h-full">
+				<View className="p-4">
+					<TextInput
+						className="p-3 rounded-lg mb-4 border-2 border-zinc-300"
+						placeholder="Buscar centros esportivos..."
+						placeholderTextColor={"#777777"}
+						value={searchQuery}
+						onChangeText={setSearchQuery}
+					/>
+					{isLoading && <Text className="text-white">Carregando...</Text>}
+					{error && <Text className="text-red-500">Erro: {error.message}</Text>}
+					<FlatList
+						data={companies}
+						renderItem={renderCompanyItem}
+						keyExtractor={(item) => item.id}
+						onEndReached={handleLoadMore}
+						onEndReachedThreshold={0.5}
+						ListEmptyComponent={() =>
+							!isLoading && (
+								<Text className="text-white text-center">
+									Nenhum centro esportivo encontrado.
+								</Text>
+							)
+						}
+					/>
+				</View>
+			</ScrollView>
 		</SafeAreaView>
 	);
 }

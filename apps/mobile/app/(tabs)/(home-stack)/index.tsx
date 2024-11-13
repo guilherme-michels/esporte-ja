@@ -1,16 +1,16 @@
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { FlatList, SafeAreaView, View, ActivityIndicator } from "react-native";
+import { ActivityIndicator, FlatList, SafeAreaView, View } from "react-native";
 
+import { trpc } from "@/api";
+import LocalityOptionsModal from "@/components/modal/locality-options-modal";
+import { ChangeLocality } from "@/components/ui/ChangeLocality";
 import { CompanyCard } from "@/components/ui/CompanyCard";
 import { EventCard } from "@/components/ui/EventCard";
 import { MyCity } from "@/components/ui/MyCity";
+import { ResultSeeMore } from "@/components/ui/ResultSeeMore";
 import { SportTypeBadge } from "@/components/ui/SportTypeBadge";
 import { SportTypeSchema } from "@/schemas";
-import LocalityOptionsModal from "@/components/modal/locality-options-modal";
-import { ResultSeeMore } from "@/components/ui/ResultSeeMore";
-import { ChangeLocality } from "@/components/ui/ChangeLocality";
-import { trpc } from "@/api";
 
 export default function HomeScreen() {
 	const [location, setLocation] = useState("Lajeado, RS");
