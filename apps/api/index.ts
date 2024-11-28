@@ -366,6 +366,17 @@ const appRouter = t.router({
 			.mutation(async ({ input }) => {
 				return await prisma.notification.delete({ where: { id: input.id } });
 			}),
+		getAll: publicProcedure
+			.input(z.object({ id: z.string() }))
+			.query(async ({ input }) => {
+				return await prisma.notification.findMany({
+					//@ts-ignore
+					where: { userId: input.id },
+					orderBy: {
+						createdAt: 'desc',
+					},
+				});
+		}),
 	}),
 });
 
