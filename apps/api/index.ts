@@ -34,7 +34,34 @@ const appRouter = t.router({
 		getById: publicProcedure
 			.input(z.object({ id: z.string() }))
 			.query(async ({ input }) => {
-				return await prisma.event.findUnique({ where: { id: input.id } });
+				try {
+					const event = await prisma.event.findUnique({
+						where: { id: input.id },
+						include: {
+							company: {
+								select: {
+									id: true,
+									name: true,
+								},
+							},
+							EventRule: true,
+							Prize: {
+								orderBy: {
+									position: "asc",
+								},
+							},
+						},
+					});
+
+					if (!event) {
+						throw new Error(`Evento não encontrado com ID: ${input.id}`);
+					}
+
+					return event;
+				} catch (error) {
+					console.error("Erro ao buscar evento:", error);
+					throw error;
+				}
 			}),
 		create: publicProcedure
 			.input(EventSchema.omit({ id: true, createdAt: true }))
@@ -164,7 +191,47 @@ const appRouter = t.router({
 		getById: publicProcedure
 			.input(z.object({ id: z.string() }))
 			.query(async ({ input }) => {
-				return await prisma.company.findUnique({ where: { id: input.id } });
+				console.log("Iniciando busca da company com ID:", input.id);
+
+				try {
+					const company = await prisma.company.findUnique({
+						where: { id: input.id },
+						include: {
+							address: {
+								include: {
+									city: true,
+								},
+							},
+							courts: {
+								select: {
+									id: true,
+									name: true,
+									type: true,
+									description: true,
+									imageUrl: true,
+									createdAt: true,
+									companyId: true,
+								},
+								orderBy: {
+									name: "asc",
+								},
+							},
+						},
+					});
+
+					console.log("Resultado da busca:", {
+						addressFound: company?.address,
+					});
+
+					if (!company) {
+						throw new Error(`Company não encontrada com ID: ${input.id}`);
+					}
+
+					return company;
+				} catch (error) {
+					console.error("Erro ao buscar company:", error);
+					throw error;
+				}
 			}),
 		create: publicProcedure.input(companyInput).mutation(async ({ input }) => {
 			const company = await prisma.company.create({
@@ -373,10 +440,10 @@ const appRouter = t.router({
 					//@ts-ignore
 					where: { userId: input.id },
 					orderBy: {
-						createdAt: 'desc',
+						createdAt: "desc",
 					},
 				});
-		}),
+			}),
 	}),
 });
 

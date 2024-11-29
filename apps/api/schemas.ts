@@ -1,5 +1,5 @@
-import { z } from "zod";
 import type { Prisma } from "@prisma/client";
+import { z } from "zod";
 
 /////////////////////////////////////////
 // HELPER FUNCTIONS
@@ -155,7 +155,7 @@ export const CourtScalarFieldEnumSchema = z.enum([
 	"description",
 	"comments",
 	"rules",
-	"images",
+	"imageUrl",
 	"createdAt",
 	"companyId",
 ]);
@@ -480,7 +480,7 @@ export const CourtSchema = z.object({
 	description: z.string().nullable(),
 	comments: z.string().nullable(),
 	rules: z.string().nullable(),
-	images: z.string().array(),
+	imageUrl: z.string().nullable(),
 	createdAt: z.coerce.date(),
 	companyId: z.string(),
 });

@@ -30,6 +30,7 @@ CREATE TABLE "events" (
     "description" TEXT,
     "type" "EventType" NOT NULL,
     "date" TIMESTAMP(3) NOT NULL,
+    "image_url" TEXT,
     "company_id" TEXT NOT NULL,
     "dateTime" TIMESTAMP(3) NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -98,8 +99,8 @@ CREATE TABLE "trophies" (
 CREATE TABLE "cities" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "state" TEXT,
-    "country" TEXT,
+    "state" TEXT NOT NULL,
+    "country" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
@@ -138,7 +139,6 @@ CREATE TABLE "companies" (
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
     "owner_id" TEXT NOT NULL,
-    "city_id" TEXT,
     "address_id" TEXT,
 
     CONSTRAINT "companies_pkey" PRIMARY KEY ("id")
@@ -151,12 +151,10 @@ CREATE TABLE "addresses" (
     "number" TEXT,
     "complement" TEXT,
     "district" TEXT NOT NULL,
-    "city" TEXT NOT NULL,
-    "state" TEXT NOT NULL,
-    "country" TEXT NOT NULL,
     "postal_code" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
+    "city_id" TEXT NOT NULL,
 
     CONSTRAINT "addresses_pkey" PRIMARY KEY ("id")
 );
@@ -192,7 +190,7 @@ CREATE TABLE "courts" (
     "description" TEXT,
     "comments" TEXT,
     "rules" TEXT,
-    "images" TEXT[],
+    "imageUrl" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "company_id" TEXT NOT NULL,
 
@@ -347,10 +345,10 @@ ALTER TABLE "company_teachers" ADD CONSTRAINT "company_teachers_teacher_id_fkey"
 ALTER TABLE "companies" ADD CONSTRAINT "companies_owner_id_fkey" FOREIGN KEY ("owner_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "companies" ADD CONSTRAINT "companies_city_id_fkey" FOREIGN KEY ("city_id") REFERENCES "cities"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "companies" ADD CONSTRAINT "companies_address_id_fkey" FOREIGN KEY ("address_id") REFERENCES "addresses"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "companies" ADD CONSTRAINT "companies_address_id_fkey" FOREIGN KEY ("address_id") REFERENCES "addresses"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "addresses" ADD CONSTRAINT "addresses_city_id_fkey" FOREIGN KEY ("city_id") REFERENCES "cities"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "opening_hours" ADD CONSTRAINT "opening_hours_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "companies"("id") ON DELETE CASCADE ON UPDATE CASCADE;

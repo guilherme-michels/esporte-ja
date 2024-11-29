@@ -1,7 +1,10 @@
-import type { Event } from "@/schemas";
+import { trpc } from "@/api";
+import type { Event, EventRule, Prize } from "@/schemas";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useState } from "react";
 import {
+	ActivityIndicator,
 	Image,
 	SafeAreaView,
 	ScrollView,
@@ -10,29 +13,42 @@ import {
 	View,
 } from "react-native";
 
-const event: Event = {
-	companyId: "1",
-	createdAt: new Date(),
-	date: new Date(),
-	id: "1",
-	title: "Torneio de Beach Tennis - Dinápoli",
-	dateTime: new Date(),
-	description:
-		"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus.",
-	type: "TOURNAMENT",
-	capacity: 16,
-	registeredCount: 16,
-};
+interface EventWithRelations extends Event {
+	Prize: Prize[];
+	EventRule: EventRule[];
+}
 
 export default function EventScreen() {
 	const router = useRouter();
-
 	const { id } = useLocalSearchParams<{ id: string }>();
+	const [imageLoading, setImageLoading] = useState(true);
 
-	if (!event) {
+	const {
+		data: event,
+		isLoading,
+		error,
+	} = trpc.event.getById.useQuery<EventWithRelations>(
+		{ id: id ?? "" },
+		{
+			enabled: !!id,
+			retry: false,
+		},
+	);
+
+	if (isLoading) {
+		return (
+			<SafeAreaView className="flex-1 justify-center items-center">
+				<ActivityIndicator size="large" color="#3b82f6" />
+			</SafeAreaView>
+		);
+	}
+
+	if (error || !event) {
 		return (
 			<SafeAreaView className="flex-1 p-4 justify-center items-center">
-				<Text className="text-lg">Evento não encontrado</Text>
+				<Text className="text-lg text-red-500">
+					{error ? error.message : "Evento não encontrado"}
+				</Text>
 			</SafeAreaView>
 		);
 	}
@@ -47,7 +63,7 @@ export default function EventScreen() {
 					<View className="mt-4 bg-white rounded-lg shadow-md mb-4">
 						<Image
 							source={{
-								uri: "https://itaguara.com/wp-content/uploads/2023/06/inscricoes-abertas.jpg",
+								uri: event.imageUrl || "https://via.placeholder.com/400x300",
 							}}
 							className="w-full h-60 rounded-lg"
 							resizeMode="cover"
@@ -62,61 +78,61 @@ export default function EventScreen() {
 
 							<View className="flex-row items-center justify-center w-full gap-4">
 								<View className="flex-row items-center gap-1">
-									<Ionicons
-										name={"calendar-outline"}
-										size={20}
-										color={"#000000"}
-									/>
+									<Ionicons name="calendar-outline" size={20} color="#000000" />
 									<Text className="text-base font-extralight">
-										{event.date.toLocaleDateString()}
+										{new Date(event.date).toLocaleDateString()}
 									</Text>
 								</View>
 
 								<View className="flex-row items-center gap-1">
-									<Ionicons name={"time-outline"} size={20} color={"#000000"} />
+									<Ionicons name="time-outline" size={20} color="#000000" />
 									<Text className="text-base font-extralight">
-										{event.dateTime.toLocaleTimeString().slice(0, 5)}
-									</Text>
-								</View>
-
-								<View className="flex-row items-center gap-1">
-									<Ionicons name={"cash-outline"} size={20} color={"#000000"} />
-									<Text className="text-base font-extralight">
-										R$ 50,00 (Dupla)
+										{new Date(event.dateTime).toLocaleTimeString().slice(0, 5)}
 									</Text>
 								</View>
 							</View>
 						</View>
 
-						<View className="mt-6 flex flex-col gap-2">
-							<Text className="text-base font-light">Regras do Evento:</Text>
-
-							<View className="flex-col gap-1">
-								<Text className="font-extralight">Idade mínima: Livre</Text>
-								<Text className="font-extralight">Categoria: Livre</Text>
+						{event.EventRule && event.EventRule.length > 0 && (
+							<View className="mt-6 flex flex-col gap-2">
+								<Text className="text-base font-light">Regras do Evento:</Text>
+								<View className="flex-col gap-1">
+									{event.EventRule.map((rule) => (
+										<Text key={rule.id} className="font-extralight">
+											{rule.value}
+										</Text>
+									))}
+								</View>
 							</View>
-						</View>
+						)}
 
-						<View className="mt-6 flex flex-col gap-2">
-							<View className="flex-row items-center gap-2 justify-center">
-								<Ionicons name="trophy" size={24} color="#e9a20a" />
-								<Text className="text-lg font-bold text-[#e9a20a]">
-									Premiações
-								</Text>
-							</View>
+						{event.Prize && event.Prize.length > 0 && (
+							<View className="mt-6 flex flex-col gap-2">
+								<View className="flex-row items-center gap-2 justify-center">
+									<Ionicons name="trophy" size={24} color="#e9a20a" />
+									<Text className="text-lg font-bold text-[#e9a20a]">
+										Premiações
+									</Text>
+								</View>
 
-							<View className="flex-col gap-1 w-full items-center">
-								<Text className="font-bold bg-green-700 w-full text-center text-white rounded p-2">
-									Primeiro lugar: R$ 500,00
-								</Text>
-								<Text className="font-bold bg-green-600 w-full text-center text-white rounded p-2">
-									Segundo lugar: R$ 300,00
-								</Text>
-								<Text className="font-bold bg-green-400 w-full text-center text-white rounded p-2">
-									Terceiro lugar: R$ 300,00
-								</Text>
+								<View className="flex-col gap-1 w-full items-center">
+									{event.Prize.map((prize) => (
+										<Text
+											key={prize.id}
+											className={`font-bold w-full text-center text-white rounded p-2 ${
+												prize.position === 1
+													? "bg-green-700"
+													: prize.position === 2
+														? "bg-green-600"
+														: "bg-green-400"
+											}`}
+										>
+											{prize.position}º lugar: R$ {prize.amount.toFixed(2)}
+										</Text>
+									))}
+								</View>
 							</View>
-						</View>
+						)}
 
 						<TouchableOpacity
 							style={{

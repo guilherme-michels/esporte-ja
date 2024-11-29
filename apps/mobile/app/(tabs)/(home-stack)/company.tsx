@@ -1,10 +1,11 @@
+import { trpc } from "@/api";
 import CompanyPricesModal from "@/components/modal/company-prices-modal";
 import { SportTypeBadge } from "@/components/ui/SportTypeBadge";
-import { type Company, SportTypeSchema } from "@/schemas";
+import { type Company, type Court, SportTypeSchema } from "@/schemas";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import {
 	ActivityIndicator,
 	Dimensions,
@@ -22,70 +23,63 @@ import Carousel, {
 	type ICarouselInstance,
 } from "react-native-reanimated-carousel";
 
-const company: Company = {
-	id: "1",
-	name: "Arena 08",
-	slug: "empresa-a",
-	logoImg:
-		"https://scontent.fcxj13-1.fna.fbcdn.net/v/t39.30808-6/275041833_112047398079581_4432519264775942829_n.jpg?_nc_cat=110&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=o9iqd5D8I0gQ7kNvgGt3bp2&_nc_ht=scontent.fcxj13-1.fna&oh=00_AYAjHSyWo5lPXz4H0V4J283Q7eewNhwtBLnHGYb8JA-y-A&oe=66CD87D2",
-	cityId: "1",
-	createdAt: new Date(),
-	updatedAt: new Date(),
-	domain: "empresa-a.com",
-	ownerId: "1",
-	addressId: "1",
-};
-
-const courts = [
-	{
-		id: "1",
-		name: "Quadra 1",
-		imageUrl:
-			"https://static.sportit.com.br/public/sportit/imagens/produtos/quadra-de-beach-tennis-sport-it-m2-2946.jpg",
-	},
-	{
-		id: "2",
-		name: "Quadra 2",
-		imageUrl:
-			"https://static.sportit.com.br/public/sportit/imagens/produtos/quadra-de-beach-tennis-sport-it-m2-2946.jpg",
-	},
-	{
-		id: "3",
-		name: "Quadra 3",
-		imageUrl:
-			"https://static.sportit.com.br/public/sportit/imagens/produtos/quadra-de-beach-tennis-sport-it-m2-2946.jpg",
-	},
-];
-
 const PAGE_WIDTH = Dimensions.get("window").width;
 
 export default function CompanyScreen() {
 	const router = useRouter();
-	const width = Dimensions.get("window").width;
 	const { id } = useLocalSearchParams<{ id: string }>();
+	const [imageLoading, setImageLoading] = useState(true);
+
+	const {
+		data: company,
+		isLoading,
+		error,
+	} = trpc.company.getById.useQuery(
+		{ id: id ?? "" },
+		{
+			enabled: !!id,
+			retry: false,
+		},
+	);
+
 	const sportTypes = SportTypeSchema.options as string[];
 	const [selectedSportType, setSelectedSportType] = useState<string | null>(
 		null,
 	);
-	const [courtSelected, setCourtSelected] = useState(courts[0].id);
-
+	const [courtSelected, setCourtSelected] = useState<string>(
+		company?.courts?.[0]?.id ?? "",
+	);
 	const progress = useSharedValue<number>(0);
 	const ref = useRef<ICarouselInstance>(null);
-
 	const [isPricesModalVisible, setIsPricesModalVisible] = useState(false);
-	const { showPricesModal } = useLocalSearchParams();
 
-	useEffect(() => {
-		if (showPricesModal) {
-			setIsPricesModalVisible(true);
-		}
-	}, [showPricesModal]);
+	// Função para filtrar as quadras baseado no tipo de esporte selecionado
+	const filteredCourts = useMemo(() => {
+		if (!company?.courts) return [];
+		if (!selectedSportType) return company.courts;
 
-	const prices = [
-		{ sport: "Futebol", normalPrice: 100, peakPrice: 150 },
-		{ sport: "Tênis", normalPrice: 80, peakPrice: 120 },
-		{ sport: "Basquete", normalPrice: 90, peakPrice: 130 },
-	];
+		return company.courts.filter(
+			(court: { type: string }) => court.type === selectedSportType,
+		);
+	}, [company?.courts, selectedSportType]);
+
+	if (isLoading) {
+		return (
+			<SafeAreaView className="flex-1 justify-center items-center">
+				<ActivityIndicator size="large" color="#3b82f6" />
+			</SafeAreaView>
+		);
+	}
+
+	if (error) {
+		return (
+			<SafeAreaView className="flex-1 p-4 justify-center items-center">
+				<Text className="text-lg text-red-500">
+					Erro ao carregar empresa: {error.message}
+				</Text>
+			</SafeAreaView>
+		);
+	}
 
 	if (!company) {
 		return (
@@ -95,7 +89,22 @@ export default function CompanyScreen() {
 		);
 	}
 
-	const [imageLoading, setImageLoading] = useState(true);
+	const prices = [
+		{ sport: "Futebol", normalPrice: 100, peakPrice: 150 },
+		{ sport: "Tênis", normalPrice: 80, peakPrice: 120 },
+		{ sport: "Basquete", normalPrice: 90, peakPrice: 130 },
+	];
+
+	const fullAddress = company.address
+		? `${company.address.street}${company.address.number ? `, ${company.address.number}` : ""}`
+		: "";
+
+	const cityState = company.address
+		? `${company.address.city.name}, ${company.address.city.state}`
+		: "";
+
+	console.log("Número de quadras:", company?.courts?.length ?? 0);
+	console.log("Dados das quadras:", company?.courts);
 
 	return (
 		<SafeAreaView className="flex-1">
@@ -103,21 +112,26 @@ export default function CompanyScreen() {
 				<View className="p-4">
 					<View className="mb-2 flex flex-row gap-1 w-full items-center justify-center">
 						<Ionicons name="location-outline" size={20} color="#3b82f6" />
-						<Text className="text-zinc-600 text-sm">
-							Rua Ondina de Oliveira Pereira, 421
-						</Text>
-
-						<Text className="text-zinc-600 text-sm">- Lajeado, RS</Text>
+						<Text className="text-zinc-600 text-sm">{fullAddress}</Text>
+						{cityState && (
+							<Text className="text-zinc-600 text-sm">- {cityState}</Text>
+						)}
 					</View>
 					<View className="w-full h-[200px] relative">
+						{imageLoading && (
+							<View className="absolute inset-0 flex items-center justify-center bg-gray-200">
+								<ActivityIndicator size="large" color="#3b82f6" />
+							</View>
+						)}
 						<Image
 							source={{
-								uri: "https://static.wixstatic.com/media/95e081_f58d74291f504f80b127a356b576d9b5~mv2.jpg/v1/fill/w_1920,h_1280,al_c/95e081_f58d74291f504f80b127a356b576d9b5~mv2.jpg",
+								uri: company.logoImg || undefined,
 							}}
-							className={"object-cover w-full h-full"}
+							className="object-cover w-full h-full"
 							alt="company-logo"
 							onLoadStart={() => setImageLoading(true)}
 							onLoadEnd={() => setImageLoading(false)}
+							resizeMode="cover"
 						/>
 					</View>
 					<View className="flex-row justify-between items-center mt-4">
@@ -169,76 +183,170 @@ export default function CompanyScreen() {
 
 				<View className="mt-6 flex items-center">
 					<Text className="text-xl font-light px-4">Quadras Disponíveis</Text>
-					<Carousel
-						ref={ref}
-						loop
-						width={PAGE_WIDTH}
-						height={PAGE_WIDTH * 0.6}
-						data={courts}
-						autoPlay={false}
-						mode="parallax"
-						modeConfig={{
-							parallaxScrollingScale: 0.9,
-							parallaxScrollingOffset: 50,
-						}}
-						renderItem={({ item }) => (
-							<View className="rounded-lg overflow-hidden shadow-lg">
-								<ImageBackground
-									source={{ uri: item.imageUrl }}
-									style={{ width: "100%", height: "100%" }}
-									resizeMode="cover"
-								>
-									<LinearGradient
-										colors={["rgba(0,0,0,0)", "rgba(0, 0, 0, 0.7)"]}
-										style={{
-											position: "absolute",
-											left: 0,
-											right: 0,
-											bottom: 0,
-											height: "50%",
-											justifyContent: "flex-end",
-											padding: 16,
-										}}
-									>
-										<Text className="text-white text-xl font-bold mb-2">
-											{item.name}
-										</Text>
 
-										<TouchableOpacity
-											onPress={() =>
-												router.push("/(calendar-stack)/booking?id=1")
-											}
+					{filteredCourts.length > 0 ? (
+						filteredCourts.length === 1 ? (
+							// Renderiza uma única quadra sem carousel
+							<View className="w-[90%] mt-4">
+								<View className="rounded-lg overflow-hidden shadow-lg">
+									<ImageBackground
+										source={{
+											uri:
+												filteredCourts[0].imageUrl ||
+												"https://via.placeholder.com/400x300",
+										}}
+										style={{ width: "100%", height: PAGE_WIDTH * 0.6 }}
+										resizeMode="cover"
+									>
+										<LinearGradient
+											colors={["rgba(0,0,0,0)", "rgba(0, 0, 0, 0.7)"]}
 											style={{
-												flexDirection: "row",
-												alignItems: "center",
-												justifyContent: "center",
-												backgroundColor: "#3b82f6",
-												paddingVertical: 8,
-												paddingHorizontal: 16,
-												borderRadius: 8,
+												position: "absolute",
+												left: 0,
+												right: 0,
+												bottom: 0,
+												height: "50%",
+												justifyContent: "flex-end",
+												padding: 16,
 											}}
 										>
-											<Ionicons
-												name="calendar-outline"
-												size={20}
-												color="#fff"
-											/>
-											<Text
+											<Text className="text-white text-xl font-bold mb-2">
+												{filteredCourts[0].name}
+											</Text>
+											<Text className="text-white text-sm mb-4">
+												{filteredCourts[0].description}
+											</Text>
+
+											<TouchableOpacity
+												onPress={() =>
+													router.push(
+														`/(calendar-stack)/booking?id=${filteredCourts[0].id}`,
+													)
+												}
 												style={{
-													color: "white",
-													fontSize: 16,
-													fontWeight: "600",
-													marginLeft: 8,
+													flexDirection: "row",
+													alignItems: "center",
+													justifyContent: "center",
+													backgroundColor: "#3b82f6",
+													paddingVertical: 8,
+													paddingHorizontal: 16,
+													borderRadius: 8,
 												}}
 											>
-												Reservar quadra
-											</Text>
-										</TouchableOpacity>
-									</LinearGradient>
-								</ImageBackground>
+												<Ionicons
+													name="calendar-outline"
+													size={20}
+													color="#fff"
+												/>
+												<Text
+													style={{
+														color: "white",
+														fontSize: 16,
+														fontWeight: "600",
+														marginLeft: 8,
+													}}
+												>
+													Reservar quadra
+												</Text>
+											</TouchableOpacity>
+										</LinearGradient>
+									</ImageBackground>
+								</View>
 							</View>
-						)}
-					/>
+						) : (
+							// Renderiza o carousel apenas quando houver mais de uma quadra
+							<Carousel
+								ref={ref}
+								loop
+								width={PAGE_WIDTH}
+								height={PAGE_WIDTH * 0.6}
+								data={filteredCourts}
+								autoPlay={false}
+								mode="parallax"
+								modeConfig={{
+									parallaxScrollingScale: 0.9,
+									parallaxScrollingOffset: 50,
+								}}
+								renderItem={({ item: court }: { item: Court }) => {
+									console.log("Renderizando quadra:", court);
+									return (
+										<View className="rounded-lg overflow-hidden shadow-lg">
+											<ImageBackground
+												source={{
+													uri:
+														court.imageUrl ||
+														"https://via.placeholder.com/400x300",
+												}}
+												style={{ width: "100%", height: "100%" }}
+												resizeMode="cover"
+											>
+												<LinearGradient
+													colors={["rgba(0,0,0,0)", "rgba(0, 0, 0, 0.7)"]}
+													style={{
+														position: "absolute",
+														left: 0,
+														right: 0,
+														bottom: 0,
+														height: "50%",
+														justifyContent: "flex-end",
+														padding: 16,
+													}}
+												>
+													<Text className="text-white text-xl font-bold mb-2">
+														{court.name}
+													</Text>
+													<Text className="text-white text-sm mb-4">
+														{court.description}
+													</Text>
+
+													<TouchableOpacity
+														onPress={() =>
+															router.push(
+																`/(calendar-stack)/booking?id=${court.id}`,
+															)
+														}
+														style={{
+															flexDirection: "row",
+															alignItems: "center",
+															justifyContent: "center",
+															backgroundColor: "#3b82f6",
+															paddingVertical: 8,
+															paddingHorizontal: 16,
+															borderRadius: 8,
+														}}
+													>
+														<Ionicons
+															name="calendar-outline"
+															size={20}
+															color="#fff"
+														/>
+														<Text
+															style={{
+																color: "white",
+																fontSize: 16,
+																fontWeight: "600",
+																marginLeft: 8,
+															}}
+														>
+															Reservar quadra
+														</Text>
+													</TouchableOpacity>
+												</LinearGradient>
+											</ImageBackground>
+										</View>
+									);
+								}}
+							/>
+						)
+					) : (
+						<View className="mt-4 p-4">
+							<Text className="text-zinc-500 text-center">
+								{selectedSportType
+									? `Nenhuma quadra disponível para ${selectedSportType.toLowerCase()}`
+									: "Nenhuma quadra disponível"}
+							</Text>
+						</View>
+					)}
 				</View>
 
 				<CompanyPricesModal
