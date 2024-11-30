@@ -1,21 +1,15 @@
-import type React from "react";
-import {
-	SafeAreaView,
-	View,
-	Text,
-	Image,
-	TouchableOpacity,
-	ScrollView,
-} from "react-native";
+import { useAuth } from "@/contexts/auth";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-
-// Mock user data (replace with real data from your auth system)
-const user = {
-	name: "João Silva",
-	email: "joao.silva@example.com",
-	avatarUrl: "https://randomuser.me/api/portraits/men/1.jpg",
-};
+import type React from "react";
+import {
+	Image,
+	SafeAreaView,
+	ScrollView,
+	Text,
+	TouchableOpacity,
+	View,
+} from "react-native";
 
 interface ProfileOptionProps {
 	icon: keyof typeof Ionicons.glyphMap;
@@ -52,20 +46,27 @@ const ProfileOption: React.FC<ProfileOptionProps> = ({
 
 export default function ProfileScreen() {
 	const router = useRouter();
+	const { user, signOut } = useAuth();
 
-	const handleLogout = () => {
-		// Implement logout logic here
-		console.log("Logout");
-		// After logout, navigate to login screen
-		// router.replace("/login");
+	const handleLogout = async () => {
+		try {
+			await signOut();
+			router.replace("/auth/sign-in");
+		} catch (error) {
+			console.error("Erro ao fazer logout:", error);
+		}
 	};
 
+	if (!user) return null;
+
 	return (
-		<SafeAreaView className="flex-1 ">
+		<SafeAreaView className="flex-1">
 			<ScrollView className="h-full bg-white">
 				<View className="items-center mt-8 mb-6">
 					<Image
-						source={{ uri: user.avatarUrl }}
+						uri={
+							user.avatarUrl || "https://randomuser.me/api/portraits/men/1.jpg"
+						}
 						className="w-24 h-24 rounded-full"
 					/>
 					<Text className="text-2xl font-bold mt-4">{user.name}</Text>
@@ -97,7 +98,7 @@ export default function ProfileScreen() {
 					onPress={() => console.log("Help and Support")}
 				/>
 
-				<View className="mt-8 px-4">
+				<View className="mt-8 px-4 mb-8">
 					<TouchableOpacity
 						onPress={handleLogout}
 						style={{

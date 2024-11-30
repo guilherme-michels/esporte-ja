@@ -1,6 +1,9 @@
 import { PrismaClient } from "@prisma/client";
 import { initTRPC } from "@trpc/server";
+import { TRPCError } from "@trpc/server";
 import { createHTTPServer } from "@trpc/server/adapters/standalone";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 import { z } from "zod";
 import {
 	BookingSchema,
@@ -28,7 +31,135 @@ const companyInput = z.object({
 	addressId: z.string().optional(),
 });
 
+// Chave secreta para JWT - Em produção, use variáveis de ambiente
+const JWT_SECRET = process.env.JWT_SECRET || "sua-chave-secreta";
+
+// Middleware de autenticação
+const isAuthenticated = t.middleware(async ({ ctx, next }) => {
+	const token = ctx.req?.headers.authorization?.split(" ")[1];
+
+	if (!token) {
+		throw new TRPCError({
+			code: "UNAUTHORIZED",
+			message: "Token não fornecido",
+		});
+	}
+
+	try {
+		const decoded = jwt.verify(token, JWT_SECRET);
+		ctx.user = decoded;
+		return next();
+	} catch (error) {
+		throw new TRPCError({
+			code: "UNAUTHORIZED",
+			message: "Token inválido",
+		});
+	}
+});
+
+// Procedimento protegido que requer autenticação
+const protectedProcedure = t.procedure.use(isAuthenticated);
+
+// Primeiro, defina o router de autenticação separadamente
+const authRouter = t.router({
+	signIn: publicProcedure
+		.input(
+			z.object({
+				email: z.string().email(),
+				password: z.string(),
+			}),
+		)
+		.mutation(async ({ input }) => {
+			const { email, password } = input;
+
+			const user = await prisma.user.findUnique({
+				where: { email },
+			});
+
+			if (!user) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Usuário não encontrado",
+				});
+			}
+
+			const validPassword = await bcrypt.compare(password, user.passwordHash);
+
+			if (!validPassword) {
+				throw new TRPCError({
+					code: "UNAUTHORIZED",
+					message: "Senha incorreta",
+				});
+			}
+
+			const token = jwt.sign(
+				{ userId: user.id, email: user.email },
+				JWT_SECRET,
+				{ expiresIn: "7d" },
+			);
+
+			return {
+				user: {
+					id: user.id,
+					name: user.name,
+					email: user.email,
+				},
+				token,
+			};
+		}),
+
+	signUp: publicProcedure
+		.input(
+			z.object({
+				name: z.string(),
+				email: z.string().email(),
+				password: z.string().min(6),
+			}),
+		)
+		.mutation(async ({ input }) => {
+			const { name, email, password } = input;
+
+			const existingUser = await prisma.user.findUnique({
+				where: { email },
+			});
+
+			if (existingUser) {
+				throw new TRPCError({
+					code: "CONFLICT",
+					message: "Email já cadastrado",
+				});
+			}
+
+			const hashedPassword = await bcrypt.hash(password, 10);
+
+			const user = await prisma.user.create({
+				data: {
+					name,
+					email,
+					passwordHash: hashedPassword,
+				},
+			});
+
+			const token = jwt.sign(
+				{ userId: user.id, email: user.email },
+				JWT_SECRET,
+				{ expiresIn: "7d" },
+			);
+
+			return {
+				user: {
+					id: user.id,
+					name: user.name,
+					email: user.email,
+				},
+				token,
+			};
+		}),
+});
+
+// Depois, adicione-o ao router principal
 const appRouter = t.router({
+	auth: authRouter, // Certifique-se que está adicionando aqui
 	// Rotas de Evento
 	event: t.router({
 		getById: publicProcedure
@@ -445,14 +576,19 @@ const appRouter = t.router({
 				});
 			}),
 	}),
+
+	auth: authRouter,
 });
 
 const server = createHTTPServer({
 	router: appRouter,
+	createContext: () => ({}),
 });
 
-server.listen(3000);
-
-console.log("Server is running on http://localhost:3000");
+server.listen(3000, () => {
+	console.log("Server running at http://localhost:3000");
+	console.log("Available routers:", Object.keys(appRouter._def.procedures));
+	console.log("Auth procedures:", Object.keys(authRouter._def.procedures));
+});
 
 export type AppRouter = typeof appRouter;

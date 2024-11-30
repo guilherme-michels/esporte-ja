@@ -9,19 +9,12 @@ import { CompanyCard } from "@/components/ui/CompanyCard";
 import { EventCard } from "@/components/ui/EventCard";
 import { MyCity } from "@/components/ui/MyCity";
 import { ResultSeeMore } from "@/components/ui/ResultSeeMore";
-import { SportTypeBadge } from "@/components/ui/SportTypeBadge";
-import { SportTypeSchema } from "@/schemas";
 
 export default function HomeScreen() {
 	const [location, setLocation] = useState("Lajeado, RS");
 	const [isLocalityOptionsModalOpened, setIsLocalityOptionsModalOpened] =
 		useState(false);
 	const router = useRouter();
-
-	const sportTypes = SportTypeSchema.options as string[];
-	const [selectedSportType, setSelectedSportType] = useState<string | null>(
-		null,
-	);
 
 	const { data: companiesData, isLoading: isLoadingCompanies } =
 		trpc.company.getAll.useQuery({
@@ -55,27 +48,6 @@ export default function HomeScreen() {
 								location={location}
 								onPress={() => setIsLocalityOptionsModalOpened(true)}
 							/>
-
-							<View className="mt-6">
-								<FlatList
-									data={sportTypes}
-									keyExtractor={(sportType) => sportType}
-									renderItem={({ item: sportType }) => (
-										<SportTypeBadge
-											sportType={sportType}
-											selected={selectedSportType === sportType}
-											onPress={() =>
-												setSelectedSportType(
-													selectedSportType === sportType ? null : sportType,
-												)
-											}
-										/>
-									)}
-									contentContainerStyle={{ gap: 16 }}
-									horizontal
-									showsHorizontalScrollIndicator={false}
-								/>
-							</View>
 
 							<View className="mt-4">
 								<ResultSeeMore

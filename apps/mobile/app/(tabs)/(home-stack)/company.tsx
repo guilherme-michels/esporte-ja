@@ -254,7 +254,6 @@ export default function CompanyScreen() {
 								</View>
 							</View>
 						) : (
-							// Renderiza o carousel apenas quando houver mais de uma quadra
 							<Carousel
 								ref={ref}
 								loop
