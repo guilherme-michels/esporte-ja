@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import type React from "react";
 import {
+	Pressable,
 	SafeAreaView,
 	ScrollView,
 	Text,
@@ -66,6 +67,13 @@ export default function ProfileScreen() {
 		}
 	};
 
+	const handleNavigateToSettings = (companyId: string) => {
+		router.push({
+			pathname: "/(tabs)/(profile-stack)/company-settings",
+			params: { companyId },
+		});
+	};
+
 	if (!user) return null;
 
 	return (
@@ -91,16 +99,14 @@ export default function ProfileScreen() {
 						<ProfileOption
 							icon="business-outline"
 							title={company.name}
-							onPress={() =>
-								router.push(`/admin/company-settings?companyId=${company.id}`)
-							}
+							onPress={() => handleNavigateToSettings(company.id)}
 						/>
 					</>
 				) : (
 					<ProfileOption
 						icon="business-outline"
 						title="Cadastrar empreendimento"
-						onPress={() => router.push("/admin/create-company")}
+						onPress={() => router.push("/(profile-stack)/create-company")}
 					/>
 				)}
 

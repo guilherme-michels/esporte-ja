@@ -162,9 +162,9 @@ CREATE TABLE "addresses" (
 -- CreateTable
 CREATE TABLE "opening_hours" (
     "id" TEXT NOT NULL,
-    "dayOfWeek" INTEGER NOT NULL,
-    "opensAt" TEXT NOT NULL,
-    "closesAt" TEXT NOT NULL,
+    "day_of_week" INTEGER NOT NULL,
+    "opens_at" TEXT NOT NULL,
+    "closes_at" TEXT NOT NULL,
     "company_id" TEXT NOT NULL,
 
     CONSTRAINT "opening_hours_pkey" PRIMARY KEY ("id")
@@ -297,7 +297,7 @@ CREATE UNIQUE INDEX "companies_domain_key" ON "companies"("domain");
 CREATE UNIQUE INDEX "companies_address_id_key" ON "companies"("address_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "opening_hours_dayOfWeek_company_id_key" ON "opening_hours"("dayOfWeek", "company_id");
+CREATE UNIQUE INDEX "opening_hours_day_of_week_company_id_key" ON "opening_hours"("day_of_week", "company_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "invites_bookingId_key" ON "invites"("bookingId");
