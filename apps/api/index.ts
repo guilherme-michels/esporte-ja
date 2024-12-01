@@ -36,9 +36,14 @@ const JWT_SECRET = process.env.JWT_SECRET || "sua-chave-secreta";
 
 // Middleware de autenticação
 const isAuthenticated = t.middleware(async ({ ctx, next }) => {
+	console.log("\n=== DEBUG isAuthenticated Middleware ===");
+	console.log("Headers recebidos:", ctx.req?.headers);
+
 	const token = ctx.req?.headers.authorization?.split(" ")[1];
+	console.log("Token extraído:", token?.substring(0, 20) + "...");
 
 	if (!token) {
+		console.log("❌ Token não fornecido");
 		throw new TRPCError({
 			code: "UNAUTHORIZED",
 			message: "Token não fornecido",
@@ -46,10 +51,34 @@ const isAuthenticated = t.middleware(async ({ ctx, next }) => {
 	}
 
 	try {
-		const decoded = jwt.verify(token, JWT_SECRET);
-		ctx.user = decoded;
+		const decoded = jwt.verify(token, JWT_SECRET) as {
+			userId: string;
+			email: string;
+		};
+		console.log("✅ Token decodificado:", decoded);
+
+		const user = await prisma.user.findUnique({
+			where: { id: decoded.userId },
+		});
+		console.log("Usuário encontrado:", user ? "Sim" : "Não");
+
+		if (!user) {
+			console.log("❌ Usuário não encontrado no banco");
+			throw new TRPCError({
+				code: "UNAUTHORIZED",
+				message: "Usuário não encontrado",
+			});
+		}
+
+		ctx.user = {
+			userId: decoded.userId,
+			email: decoded.email,
+		};
+		console.log("✅ Contexto atualizado com usuário:", ctx.user);
+
 		return next();
 	} catch (error) {
+		console.error("❌ Erro na autenticação:", error);
 		throw new TRPCError({
 			code: "UNAUTHORIZED",
 			message: "Token inválido",
@@ -74,6 +103,9 @@ const authRouter = t.router({
 
 			const user = await prisma.user.findUnique({
 				where: { email },
+				include: {
+					companies: true,
+				},
 			});
 
 			if (!user) {
@@ -98,12 +130,16 @@ const authRouter = t.router({
 				{ expiresIn: "7d" },
 			);
 
+			const userData = {
+				id: user.id,
+				name: user.name,
+				email: user.email,
+				ownedCompanies: [],
+				adminCompanies: user.companies || [],
+			};
+
 			return {
-				user: {
-					id: user.id,
-					name: user.name,
-					email: user.email,
-				},
+				user: userData,
 				token,
 			};
 		}),
@@ -143,7 +179,9 @@ const authRouter = t.router({
 			const token = jwt.sign(
 				{ userId: user.id, email: user.email },
 				JWT_SECRET,
-				{ expiresIn: "7d" },
+				{
+					expiresIn: "7d",
+				},
 			);
 
 			return {
@@ -151,16 +189,198 @@ const authRouter = t.router({
 					id: user.id,
 					name: user.name,
 					email: user.email,
+					ownedCompanies: [],
+					adminCompanies: [],
 				},
 				token,
 			};
 		}),
 });
 
+const bookingRouter = t.router({
+	create: publicProcedure
+		.input(
+			z.object({
+				courtId: z.string(),
+				userId: z.string(),
+				dateTime: z.date(),
+				price: z.number(),
+			}),
+		)
+		.mutation(async ({ input }) => {
+			const { courtId, userId, dateTime, price } = input;
+
+			// Verifica se já existe agendamento para este horário
+			const existingBooking = await prisma.booking.findFirst({
+				where: {
+					courtId,
+					dateTime,
+				},
+			});
+
+			if (existingBooking) {
+				throw new TRPCError({
+					code: "CONFLICT",
+					message: "Horário já está reservado",
+				});
+			}
+
+			// Verifica disponibilidade do horário
+			const dayOfWeek = dateTime.getDay();
+			const time = dateTime.toLocaleTimeString("pt-BR", {
+				hour: "2-digit",
+				minute: "2-digit",
+				hour12: false,
+			});
+
+			const availability = await prisma.availability.findFirst({
+				where: {
+					courtId,
+					dayOfWeek,
+					startTime: {
+						lte: time,
+					},
+					endTime: {
+						gte: time,
+					},
+				},
+			});
+
+			if (!availability) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Horário indisponível",
+				});
+			}
+
+			// Cria o agendamento
+			const booking = await prisma.booking.create({
+				data: {
+					courtId,
+					userId,
+					dateTime,
+					price,
+				},
+				include: {
+					court: true,
+					user: true,
+				},
+			});
+
+			return booking;
+		}),
+
+	getAvailableSlots: publicProcedure
+		.input(
+			z.object({
+				courtId: z.string(),
+				date: z.date(),
+			}),
+		)
+		.query(async ({ input }) => {
+			const { courtId, date } = input;
+			const dayOfWeek = date.getDay();
+
+			// Busca a quadra e a empresa
+			const court = await prisma.court.findUnique({
+				where: { id: courtId },
+				include: {
+					company: {
+						include: {
+							openingHours: true,
+						},
+					},
+				},
+			});
+
+			if (!court) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Quadra não encontrada",
+				});
+			}
+
+			// Busca o horário de funcionamento do dia
+			const openingHours = court.company.openingHours.find(
+				(oh) => oh.dayOfWeek === dayOfWeek,
+			);
+
+			if (!openingHours) {
+				return []; // Empresa fechada neste dia
+			}
+
+			// Converte horários de string para Date
+			const [openHour, openMinute] = openingHours.opensAt
+				.split(":")
+				.map(Number);
+			const [closeHour, closeMinute] = openingHours.closesAt
+				.split(":")
+				.map(Number);
+
+			// Busca agendamentos existentes
+			const existingBookings = await prisma.booking.findMany({
+				where: {
+					courtId,
+					dateTime: {
+						gte: new Date(date.setHours(openHour, openMinute, 0, 0)),
+						lt: new Date(date.setHours(closeHour, closeMinute, 0, 0)),
+					},
+				},
+			});
+
+			// Gera slots de 30 em 30 minutos
+			const slots = [];
+			const startTime = new Date(date);
+			startTime.setHours(openHour, openMinute, 0, 0);
+			const endTime = new Date(date);
+			endTime.setHours(closeHour, closeMinute, 0, 0);
+
+			while (startTime < endTime) {
+				const timeString = startTime.toLocaleTimeString("pt-BR", {
+					hour: "2-digit",
+					minute: "2-digit",
+					hour12: false,
+				});
+
+				const isBooked = existingBookings.some(
+					(booking) =>
+						booking.dateTime.toLocaleTimeString("pt-BR", {
+							hour: "2-digit",
+							minute: "2-digit",
+							hour12: false,
+						}) === timeString,
+				);
+
+				// Verifica se está dentro do horário de pico
+				const availability = await prisma.availability.findFirst({
+					where: {
+						courtId,
+						dayOfWeek,
+						startTime: {
+							lte: timeString,
+						},
+						endTime: {
+							gte: timeString,
+						},
+					},
+				});
+
+				if (!isBooked) {
+					slots.push({
+						time: timeString,
+						isPeakHour: availability?.isPeakHour ?? false,
+					});
+				}
+
+				startTime.setMinutes(startTime.getMinutes() + 30);
+			}
+
+			return slots;
+		}),
+});
+
 // Depois, adicione-o ao router principal
 const appRouter = t.router({
-	auth: authRouter, // Certifique-se que está adicionando aqui
-	// Rotas de Evento
 	event: t.router({
 		getById: publicProcedure
 			.input(z.object({ id: z.string() }))
@@ -462,6 +682,198 @@ const appRouter = t.router({
 					nextCursor,
 				};
 			}),
+		updateOpeningHours: publicProcedure
+			.input(
+				z.object({
+					companyId: z.string(),
+					openingHours: z.array(
+						z.object({
+							dayOfWeek: z.number().min(0).max(6),
+							opensAt: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/),
+							closesAt: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/),
+						}),
+					),
+				}),
+			)
+			.mutation(async ({ input }) => {
+				const { companyId, openingHours } = input;
+
+				// Primeiro, remove todos os horários existentes
+				await prisma.openingHours.deleteMany({
+					where: { companyId },
+				});
+
+				// Depois, cria os novos horários
+				const createdHours = await Promise.all(
+					openingHours.map((hour) =>
+						prisma.openingHours.create({
+							data: {
+								companyId,
+								dayOfWeek: hour.dayOfWeek,
+								opensAt: hour.opensAt,
+								closesAt: hour.closesAt,
+							},
+						}),
+					),
+				);
+
+				return createdHours;
+			}),
+		getOpeningHours: publicProcedure
+			.input(z.object({ companyId: z.string() }))
+			.query(async ({ input }) => {
+				return await prisma.openingHours.findMany({
+					where: { companyId: input.companyId },
+					orderBy: { dayOfWeek: "asc" },
+				});
+			}),
+		getUserCompanies: protectedProcedure.query(async ({ ctx }) => {
+			console.log("\n=== DEBUG getUserCompanies ===");
+			console.log("ID do usuário:", ctx.user.userId);
+
+			try {
+				// Busca empresas onde o usuário é owner
+				const companiesAsOwner = await prisma.company.findMany({
+					where: { ownerId: ctx.user.userId },
+					include: {
+						address: true,
+						owner: true,
+					},
+				});
+				console.log("📊 Empresas como owner:", companiesAsOwner);
+
+				// Busca empresas onde o usuário é admin
+				const companiesAsAdmin = await prisma.company.findMany({
+					where: {
+						admins: {
+							some: { id: ctx.user.userId },
+						},
+					},
+					include: {
+						address: true,
+						owner: true,
+					},
+				});
+				console.log("📊 Empresas como admin:", companiesAsAdmin);
+
+				const allCompanies = [...companiesAsOwner, ...companiesAsAdmin];
+				console.log("📊 Total de empresas encontradas:", allCompanies.length);
+
+				return allCompanies;
+			} catch (error) {
+				console.error("\n=== ❌ ERRO DETALHADO getUserCompanies ===");
+				console.error("Erro completo:", error);
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message: "Erro ao buscar empresas do usuário",
+					cause: error,
+				});
+			}
+		}),
+		addAdmin: protectedProcedure
+			.input(
+				z.object({
+					companyId: z.string(),
+
+					email: z.string().email(),
+				}),
+			)
+			.mutation(async ({ ctx, input }) => {
+				const company = await prisma.company.findUnique({
+					where: { id: input.companyId },
+				});
+
+				if (!company || company.ownerId !== ctx.user.userId) {
+					throw new TRPCError({
+						code: "FORBIDDEN",
+						message: "Apenas o proprietário pode adicionar administradores",
+					});
+				}
+
+				// Busca o usuário pelo email
+				const userToAdd = await prisma.user.findUnique({
+					where: { email: input.email },
+				});
+
+				if (!userToAdd) {
+					throw new TRPCError({
+						code: "NOT_FOUND",
+						message: "Usuário não encontrado com este email",
+					});
+				}
+
+				// Verifica se já é admin
+				const isAlreadyAdmin = await prisma.company.findFirst({
+					where: {
+						id: input.companyId,
+						admins: {
+							some: { id: userToAdd.id },
+						},
+					},
+				});
+
+				if (isAlreadyAdmin) {
+					throw new TRPCError({
+						code: "CONFLICT",
+						message: "Este usuário já é administrador",
+					});
+				}
+
+				return await prisma.company.update({
+					where: { id: input.companyId },
+					data: {
+						admins: {
+							connect: { id: userToAdd.id },
+						},
+					},
+					include: {
+						admins: true,
+					},
+				});
+			}),
+		removeAdmin: protectedProcedure
+			.input(
+				z.object({
+					companyId: z.string(),
+					email: z.string().email(),
+				}),
+			)
+			.mutation(async ({ ctx, input }) => {
+				const company = await prisma.company.findUnique({
+					where: { id: input.companyId },
+				});
+
+				if (!company || company.ownerId !== ctx.user.userId) {
+					throw new TRPCError({
+						code: "FORBIDDEN",
+						message: "Apenas o proprietário pode remover administradores",
+					});
+				}
+
+				// Busca o usuário pelo email
+				const userToRemove = await prisma.user.findUnique({
+					where: { email: input.email },
+				});
+
+				if (!userToRemove) {
+					throw new TRPCError({
+						code: "NOT_FOUND",
+						message: "Usuário não encontrado com este email",
+					});
+				}
+
+				return await prisma.company.update({
+					where: { id: input.companyId },
+					data: {
+						admins: {
+							disconnect: { id: userToRemove.id },
+						},
+					},
+					include: {
+						admins: true,
+					},
+				});
+			}),
 	}),
 
 	// Rotas de Quadra
@@ -515,29 +927,7 @@ const appRouter = t.router({
 	}),
 
 	// Rotas de Reserva
-	booking: t.router({
-		getById: publicProcedure
-			.input(z.object({ id: z.string() }))
-			.query(async ({ input }) => {
-				return await prisma.booking.findUnique({ where: { id: input.id } });
-			}),
-		create: publicProcedure
-			.input(BookingSchema.omit({ id: true, createdAt: true }))
-			.mutation(async ({ input }) => {
-				return await prisma.booking.create({ data: input });
-			}),
-		update: publicProcedure
-			.input(BookingSchema.partial().extend({ id: z.string() }))
-			.mutation(async ({ input }) => {
-				const { id, ...data } = input;
-				return await prisma.booking.update({ where: { id }, data });
-			}),
-		delete: publicProcedure
-			.input(z.object({ id: z.string() }))
-			.mutation(async ({ input }) => {
-				return await prisma.booking.delete({ where: { id: input.id } });
-			}),
-	}),
+	booking: bookingRouter,
 
 	// Rotas de Notificação
 	notification: t.router({
@@ -582,13 +972,15 @@ const appRouter = t.router({
 
 const server = createHTTPServer({
 	router: appRouter,
-	createContext: () => ({}),
+	createContext: (opts) => {
+		console.log("\n=== DEBUG createContext ===");
+		console.log("Headers recebidos:", opts.req.headers);
+		return { req: opts.req };
+	},
 });
 
 server.listen(3000, () => {
-	console.log("Server running at http://localhost:3000");
-	console.log("Available routers:", Object.keys(appRouter._def.procedures));
-	console.log("Auth procedures:", Object.keys(authRouter._def.procedures));
+	console.log("🚀 Servidor TRPC rodando na porta 3000");
 });
 
 export type AppRouter = typeof appRouter;

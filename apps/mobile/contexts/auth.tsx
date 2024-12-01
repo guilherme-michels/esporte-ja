@@ -1,11 +1,19 @@
 import { trpc } from "@/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
 import { createContext, useContext, useEffect, useState } from "react";
+
+interface Company {
+	id: string;
+	name: string;
+	// ... outros campos relevantes
+}
 
 interface User {
 	id: string;
 	name: string;
 	email: string;
+	companies?: Company[];
 }
 
 interface AuthContextData {
@@ -21,6 +29,8 @@ const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
 	const [user, setUser] = useState<User | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
+	const [isReady, setIsReady] = useState(false);
+	const router = useRouter();
 
 	const signInMutation = trpc.auth.signIn.useMutation();
 	const signUpMutation = trpc.auth.signUp.useMutation();
@@ -28,6 +38,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 	useEffect(() => {
 		loadStorageData();
 	}, []);
+
+	useEffect(() => {
+		if (!isLoading && isReady) {
+			if (!user) {
+				router.replace("/auth/sign-in");
+			} else {
+				router.replace("/(tabs)");
+			}
+		}
+	}, [isLoading, user, isReady]);
 
 	async function loadStorageData() {
 		try {
@@ -41,20 +61,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 			console.error("Erro ao carregar dados do storage:", error);
 		} finally {
 			setIsLoading(false);
+			setIsReady(true);
 		}
 	}
 
 	async function signIn(email: string, password: string) {
 		try {
 			console.log("Tentando fazer login...", { email });
-
-			// Verifique se a mutação existe
-			if (!signInMutation) {
-				console.error("signInMutation não está definida");
-				return;
-			}
-
-			console.log("Mutation disponível, tentando executar...");
 
 			const response = await signInMutation.mutateAsync({
 				email,
@@ -63,11 +76,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 			console.log("Login bem sucedido:", response);
 
-			setUser(response.user);
-			await AsyncStorage.setItem(
-				"@EsporteJa:user",
-				JSON.stringify(response.user),
-			);
+			const userData = {
+				id: response.user.id,
+				name: response.user.name,
+				email: response.user.email,
+				companies: response.user.companies || [],
+			};
+
+			setUser(userData);
+			await AsyncStorage.setItem("@EsporteJa:user", JSON.stringify(userData));
 			await AsyncStorage.setItem("@EsporteJa:token", response.token);
 		} catch (error) {
 			console.error("Erro detalhado no login:", {
@@ -88,15 +105,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 				password,
 			});
 
-			setUser({
+			const userData = {
 				id: response.user.id,
 				name: response.user.name,
 				email: response.user.email,
-			});
-			await AsyncStorage.setItem(
-				"@EsporteJa:user",
-				JSON.stringify(response.user),
-			);
+				companies: response.user.companies || [],
+			};
+
+			setUser(userData);
+			await AsyncStorage.setItem("@EsporteJa:user", JSON.stringify(userData));
 			await AsyncStorage.setItem("@EsporteJa:token", response.token);
 		} catch (error) {
 			console.error("Erro no cadastro:", error);

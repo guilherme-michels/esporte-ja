@@ -1,40 +1,69 @@
+import { trpc } from "@/api";
+import { useAuth } from "@/contexts/auth";
+import { Ionicons } from "@expo/vector-icons";
+import { addDays, format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+	ActivityIndicator,
+	Alert,
+	FlatList,
 	SafeAreaView,
 	Text,
-	FlatList,
 	TouchableOpacity,
 	View,
-	ScrollView,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { format, addDays } from "date-fns";
-import { ptBR } from "date-fns/locale";
-
-const initialAvailableSlots = [
-	{ id: 1, time: "08:00", duration: 60 },
-	{ id: 2, time: "09:00", duration: 60 },
-	{ id: 3, time: "10:00", duration: 60 },
-	{ id: 4, time: "11:00", duration: 60 },
-	{ id: 5, time: "12:00", duration: 60 },
-	{ id: 6, time: "13:00", duration: 60 },
-	{ id: 7, time: "14:00", duration: 60 },
-	{ id: 8, time: "15:00", duration: 60 },
-	{ id: 9, time: "16:00", duration: 60 },
-	{ id: 10, time: "17:00", duration: 60 },
-];
 
 export default function BookingScreen() {
-	const [selectedDay, setSelectedDay] = useState<Date>(new Date());
-	const [selectedSlots, setSelectedSlots] = useState<number[]>([]);
+	const { courtId } = useLocalSearchParams<{ courtId: string }>();
+	const { user } = useAuth();
+	const router = useRouter();
 
-	const toggleSlotSelection = (slotId: number) => {
-		setSelectedSlots((prevSelectedSlots) => {
-			if (prevSelectedSlots.includes(slotId)) {
-				return prevSelectedSlots.filter((id) => id !== slotId);
-			}
-			return [...prevSelectedSlots, slotId];
+	const [selectedDay, setSelectedDay] = useState<Date>(new Date());
+	const [selectedSlots, setSelectedSlots] = useState<string[]>([]);
+
+	const { data: availableSlots, isLoading } =
+		trpc.booking.getAvailableSlots.useQuery({
+			courtId: courtId as string,
+			date: selectedDay,
 		});
+
+	const bookingMutation = trpc.booking.create.useMutation({
+		onSuccess: () => {
+			Alert.alert("Sucesso", "Agendamento realizado com sucesso!");
+			router.push("/(tabs)/(calendar-stack)/calendar");
+		},
+		onError: (error) => {
+			Alert.alert("Erro", error.message);
+		},
+	});
+
+	const handleBooking = async () => {
+		if (!user) {
+			Alert.alert(
+				"Erro",
+				"Você precisa estar logado para fazer um agendamento",
+			);
+			return;
+		}
+
+		try {
+			for (const time of selectedSlots) {
+				const [hours, minutes] = time.split(":").map(Number);
+				const dateTime = new Date(selectedDay);
+				dateTime.setHours(hours, minutes, 0, 0);
+
+				await bookingMutation.mutateAsync({
+					courtId: courtId as string,
+					userId: user.id,
+					dateTime,
+					price: 100, // Ajuste o preço conforme necessário
+				});
+			}
+		} catch (error) {
+			console.error("Erro ao criar agendamento:", error);
+		}
 	};
 
 	const handlePrevDay = () => {
@@ -47,64 +76,49 @@ export default function BookingScreen() {
 
 	const renderTimeSlot = ({
 		item,
-	}: {
-		item: { id: number; time: string; duration: number };
-	}) => (
+	}: { item: { time: string; isPeakHour: boolean } }) => (
 		<TouchableOpacity
-			onPress={() => toggleSlotSelection(item.id)}
-			style={{
-				flex: 1,
-				backgroundColor: selectedSlots.includes(item.id)
-					? "#16a34a"
-					: "#f3f3f3",
-				padding: 12,
-				marginBottom: 8,
-				borderRadius: 8,
-				paddingLeft: 12,
+			onPress={() => {
+				if (selectedSlots.includes(item.time)) {
+					setSelectedSlots(selectedSlots.filter((time) => time !== item.time));
+				} else {
+					setSelectedSlots([...selectedSlots, item.time]);
+				}
 			}}
+			className={`p-4 mb-2 rounded-lg ${
+				selectedSlots.includes(item.time)
+					? "bg-green-600"
+					: item.isPeakHour
+						? "bg-yellow-100"
+						: "bg-gray-100"
+			}`}
 		>
-			<View className="flex flex-row justify-between items-center w-full">
-				<View className="flex flex-row justify-between items-center gap-2">
-					<Ionicons
-						name="checkbox"
-						size={20}
-						color={selectedSlots.includes(item.id) ? "#fff" : "transparent"}
-						style={{ opacity: selectedSlots.includes(item.id) ? 1 : 0 }}
-					/>
-
-					<Text
-						className={`font-light ${
-							selectedSlots.includes(item.id) ? "text-white" : "text-black"
-						}`}
-					>
-						{item.time} às {formatTime(item.time, item.duration)}
-					</Text>
-				</View>
-
-				<View className="flex flex-com">
-					<Text
-						className={
-							selectedSlots.includes(item.id)
-								? "text-white font-medium"
-								: "text-green-600 font-medium"
-						}
-					>
-						{selectedSlots.includes(item.id) ? "SELECIONADO" : "LIVRE"}
-					</Text>
-				</View>
+			<View className="flex-row justify-between items-center">
+				<Text
+					className={
+						selectedSlots.includes(item.time)
+							? "text-white font-bold"
+							: "text-black"
+					}
+				>
+					{item.time}
+				</Text>
+				{item.isPeakHour && (
+					<View className="bg-yellow-500 px-2 py-1 rounded">
+						<Text className="text-xs text-white">Horário de Pico</Text>
+					</View>
+				)}
 			</View>
 		</TouchableOpacity>
 	);
 
-	const formatTime = (time: string, duration: number) => {
-		const [hours, minutes] = time.split(":").map(Number);
-		const endTime = new Date();
-		endTime.setHours(hours);
-		endTime.setMinutes(minutes + duration);
-		return `${String(endTime.getHours()).padStart(2, "0")}:${String(
-			endTime.getMinutes(),
-		).padStart(2, "0")}`;
-	};
+	if (isLoading) {
+		return (
+			<View className="flex-1 justify-center items-center">
+				<ActivityIndicator size="large" color="#0000ff" />
+			</View>
+		);
+	}
 
 	return (
 		<SafeAreaView className="flex-1 bg-gray-100">
@@ -120,28 +134,30 @@ export default function BookingScreen() {
 						<Ionicons name="chevron-forward" size={24} color="black" />
 					</TouchableOpacity>
 				</View>
-
-				{selectedSlots.length > 0 && (
-					<View className="absolute bottom-4 left-4 right-4 p-4 bg-blue-500 z-10 rounded-lg flex flex-row justify-between items-center">
-						<View className="flex flex-row justify-between items-center gap-2">
-							<Ionicons name="calendar-outline" size={20} color={"#fff"} />
-							<Text className="text-white font-bold">
-								{selectedSlots.length}{" "}
-								{selectedSlots.length === 1 ? "horário" : "horários"}{" "}
-								selecionado
-								{selectedSlots.length > 1 ? "s" : ""}
+				<FlatList<{ time: string; isPeakHour: boolean }>
+					data={availableSlots}
+					keyExtractor={(item) => item.time}
+					renderItem={renderTimeSlot}
+					ListEmptyComponent={
+						<View className="flex-1 justify-center items-center py-8">
+							<Ionicons name="calendar-outline" size={48} color="gray" />
+							<Text className="text-gray-500 mt-2 text-center">
+								Nenhum horário disponível para este dia
 							</Text>
 						</View>
-						<Ionicons name="arrow-forward-circle" size={24} color={"#fff"} />
-					</View>
-				)}
-
-				<FlatList
-					data={initialAvailableSlots}
-					keyExtractor={(item) => item.id.toString()}
-					renderItem={renderTimeSlot}
-					contentContainerStyle={{ paddingBottom: 100 }}
+					}
 				/>
+
+				{selectedSlots.length > 0 && (
+					<TouchableOpacity
+						onPress={handleBooking}
+						className="absolute bottom-4 left-4 right-4 p-4 bg-blue-500 rounded-lg"
+					>
+						<Text className="text-white text-center font-bold">
+							Agendar {selectedSlots.length} horário(s)
+						</Text>
+					</TouchableOpacity>
+				)}
 			</View>
 		</SafeAreaView>
 	);

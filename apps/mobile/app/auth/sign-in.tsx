@@ -28,7 +28,6 @@ export default function SignInScreen() {
 			setIsLoading(true);
 			setError("");
 			await signIn(email, password);
-			router.replace("/(tabs)");
 		} catch (err) {
 			setError("Erro ao fazer login. Verifique suas credenciais.");
 		} finally {

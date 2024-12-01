@@ -9,6 +9,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
+import { View } from "react-native";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -28,42 +29,38 @@ export default function RootLayout() {
 	}
 
 	return (
-		<ThemeProvider
-			value={{
-				...DefaultTheme,
-				colors: { ...DefaultTheme.colors, background: "#3b82f6" },
-			}}
-		>
-			<TrpcProvider>
-				<AuthProvider>
-					<AuthGuard>
-						<StatusBar style="light" translucent backgroundColor="#000" />
-						<Stack
-							screenOptions={{
-								headerShown: false,
-								header: () => null,
-							}}
-						>
-							<Stack.Screen
-								name="auth"
-								options={{
+		<View style={{ flex: 1 }}>
+			<ThemeProvider
+				value={{
+					...DefaultTheme,
+					colors: {
+						...DefaultTheme.colors,
+						background: "white",
+						primary: "#3b82f6",
+						card: "white",
+						text: "black",
+						border: "#e5e7eb",
+					},
+				}}
+			>
+				<TrpcProvider>
+					<AuthProvider>
+						<AuthGuard>
+							<StatusBar style="dark" />
+							<Stack
+								screenOptions={{
 									headerShown: false,
-									title: "",
+									contentStyle: { backgroundColor: "white" },
 								}}
-							/>
-							<Stack.Screen
-								name="(tabs)"
-								options={{
-									headerShown: false,
-									title: "",
-								}}
-							/>
-
-							<Stack.Screen name="+not-found" />
-						</Stack>
-					</AuthGuard>
-				</AuthProvider>
-			</TrpcProvider>
-		</ThemeProvider>
+							>
+								<Stack.Screen name="auth" />
+								<Stack.Screen name="(tabs)" />
+								<Stack.Screen name="+not-found" />
+							</Stack>
+						</AuthGuard>
+					</AuthProvider>
+				</TrpcProvider>
+			</ThemeProvider>
+		</View>
 	);
 }

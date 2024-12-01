@@ -219,9 +219,10 @@ export default function CompanyScreen() {
 
 											<TouchableOpacity
 												onPress={() =>
-													router.push(
-														`/(calendar-stack)/booking?id=${filteredCourts[0].id}`,
-													)
+													router.push({
+														pathname: "/(tabs)/(calendar-stack)/booking",
+														params: { courtId: filteredCourts[0].id },
+													})
 												}
 												style={{
 													flexDirection: "row",
@@ -300,9 +301,10 @@ export default function CompanyScreen() {
 
 													<TouchableOpacity
 														onPress={() =>
-															router.push(
-																`/(calendar-stack)/booking?id=${court.id}`,
-															)
+															router.push({
+																pathname: "/(tabs)/(calendar-stack)/booking",
+																params: { courtId: court.id },
+															})
 														}
 														style={{
 															flexDirection: "row",

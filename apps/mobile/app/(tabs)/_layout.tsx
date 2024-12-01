@@ -1,57 +1,50 @@
+import { Ionicons } from "@expo/vector-icons";
 import "../../global.css";
 
 import { Tabs } from "expo-router";
-import React from "react";
 
-import { TabBarIcon } from "@/components/TabBarIcon";
-import { useNavigationState, useRoute } from "@react-navigation/native";
-import { TrpcProvider } from "@/api";
-
-export default function TabLayout() {
-	const state = useNavigationState((state) => state);
-	const route = useRoute();
-
-	const isHomeFocused =
-		state.routes[state.index].name === "(home-stack)" && route.name === "index";
-
+export default function TabsLayout() {
 	return (
-		<TrpcProvider>
-			<Tabs
-				screenOptions={{
-					tabBarActiveTintColor: "#000",
-					headerShown: false,
+		<Tabs
+			screenOptions={{
+				headerShown: false,
+				tabBarStyle: {
+					backgroundColor: "white",
+					borderTopColor: "#e5e7eb",
+				},
+				tabBarActiveTintColor: "#3b82f6",
+				tabBarInactiveTintColor: "#6b7280",
+			}}
+		>
+			<Tabs.Screen
+				name="(home-stack)"
+				options={{
+					title: "Início",
+					tabBarIcon: ({ color }) => (
+						<Ionicons name="home-outline" size={24} color={color} />
+					),
 				}}
-			>
-				<Tabs.Screen
-					name="(home-stack)"
-					options={{
-						title: "Home",
-						tabBarIcon: ({ color, focused }) => (
-							<TabBarIcon name="home" color={color} />
-						),
-					}}
-				/>
+			/>
 
-				<Tabs.Screen
-					name="(calendar-stack)"
-					options={{
-						title: "Agenda",
-						tabBarIcon: ({ color, focused }) => (
-							<TabBarIcon name="calendar" color={color} />
-						),
-					}}
-				/>
+			<Tabs.Screen
+				name="(calendar-stack)"
+				options={{
+					title: "Agenda",
+					tabBarIcon: ({ color }) => (
+						<Ionicons name="calendar-outline" size={24} color={color} />
+					),
+				}}
+			/>
 
-				<Tabs.Screen
-					name="(profile-stack)"
-					options={{
-						title: "Perfil",
-						tabBarIcon: ({ color, focused }) => (
-							<TabBarIcon name="user-circle" color={color} />
-						),
-					}}
-				/>
-			</Tabs>
-		</TrpcProvider>
+			<Tabs.Screen
+				name="(profile-stack)"
+				options={{
+					title: "Perfil",
+					tabBarIcon: ({ color }) => (
+						<Ionicons name="person-outline" size={24} color={color} />
+					),
+				}}
+			/>
+		</Tabs>
 	);
 }

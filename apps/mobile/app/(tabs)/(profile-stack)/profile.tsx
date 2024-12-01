@@ -1,9 +1,9 @@
 import { useAuth } from "@/contexts/auth";
+import { useCompanyAccess } from "@/hooks/useCompanyAccess";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import type React from "react";
 import {
-	Image,
 	SafeAreaView,
 	ScrollView,
 	Text,
@@ -47,11 +47,20 @@ const ProfileOption: React.FC<ProfileOptionProps> = ({
 export default function ProfileScreen() {
 	const router = useRouter();
 	const { user, signOut } = useAuth();
+	const { companies, isLoading } = useCompanyAccess();
+
+	const company = companies?.[0];
+
+	console.log("Profile Screen Estado:", {
+		hasUser: !!user,
+		isLoading,
+		hasCompany: !!company,
+		companyName: company?.name,
+	});
 
 	const handleLogout = async () => {
 		try {
 			await signOut();
-			router.replace("/auth/sign-in");
 		} catch (error) {
 			console.error("Erro ao fazer logout:", error);
 		}
@@ -63,15 +72,37 @@ export default function ProfileScreen() {
 		<SafeAreaView className="flex-1">
 			<ScrollView className="h-full bg-white">
 				<View className="items-center mt-8 mb-6">
-					<Image
-						uri={
-							user.avatarUrl || "https://randomuser.me/api/portraits/men/1.jpg"
-						}
-						className="w-24 h-24 rounded-full"
-					/>
 					<Text className="text-2xl font-bold mt-4">{user.name}</Text>
 					<Text className="text-gray-500">{user.email}</Text>
 				</View>
+
+				{isLoading ? (
+					<View className="px-4 py-3">
+						<Text>Carregando empresa...</Text>
+					</View>
+				) : company ? (
+					<>
+						<View className="bg-gray-100 py-2">
+							<Text className="text-gray-500 text-sm px-4">
+								Meu Empreendimento
+							</Text>
+						</View>
+
+						<ProfileOption
+							icon="business-outline"
+							title={company.name}
+							onPress={() =>
+								router.push(`/admin/company-settings?companyId=${company.id}`)
+							}
+						/>
+					</>
+				) : (
+					<ProfileOption
+						icon="business-outline"
+						title="Cadastrar empreendimento"
+						onPress={() => router.push("/admin/create-company")}
+					/>
+				)}
 
 				<View className="bg-gray-100 py-2">
 					<Text className="text-gray-500 text-sm px-4">Configurações</Text>
@@ -108,7 +139,7 @@ export default function ProfileScreen() {
 							alignItems: "center",
 						}}
 					>
-						<Text className="text-white text-lg font-semibold">Sair</Text>
+						<Text className="text-white font-semibold">Sair</Text>
 					</TouchableOpacity>
 				</View>
 			</ScrollView>

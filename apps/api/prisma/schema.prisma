@@ -239,9 +239,9 @@ model Address {
 
 model OpeningHours {
   id        String  @id @default(uuid())
-  dayOfWeek Int
-  opensAt   String
-  closesAt  String
+  dayOfWeek Int     @map("day_of_week")
+  opensAt   String  @map("opens_at")
+  closesAt  String  @map("closes_at")
   company   Company @relation("CompanyOpeningHours", fields: [companyId], references: [id], onDelete: Cascade)
   companyId String  @map("company_id")
 
