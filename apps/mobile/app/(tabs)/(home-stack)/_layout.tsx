@@ -58,15 +58,7 @@ export default function HomeStack() {
 					onPress: () => router.back(),
 				})}
 			/>
-			<Stack.Screen name="notifications" options={{ headerShown: false }} />
-			<Stack.Screen name="review-form" options={{ headerShown: false }} />
-			<Stack.Screen
-				name="reviews"
-				options={CustomHeaderOptions({
-					title: "Avaliações",
-					onPress: () => router.back(),
-				})}
-			/>
+
 			<Stack.Screen
 				name="search-companies"
 				options={CustomHeaderOptions({

@@ -136,27 +136,6 @@ export default function CompanyScreen() {
 					</View>
 					<View className="flex-row justify-between items-center mt-4">
 						<Text className="text-2xl font-bold">{company.name}</Text>
-						<TouchableOpacity
-							onPress={() =>
-								router.push(`/(tabs)/(home-stack)/reviews?id=${company.id}`)
-							}
-							style={{
-								display: "flex",
-								flexDirection: "row",
-								alignItems: "center",
-								gap: 4,
-							}}
-						>
-							<Text className="text-sm text-zinc-800 font-light">
-								(12 avaliações)
-							</Text>
-							<View className="flex-row items-center">
-								<Text className="text-xl text-[#e9a20a] font-extrabold">
-									4,8
-								</Text>
-								<Ionicons name="star" size={20} color="#e9a20a" />
-							</View>
-						</TouchableOpacity>
 					</View>
 				</View>
 

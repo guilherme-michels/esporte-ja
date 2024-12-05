@@ -119,11 +119,7 @@ export default function ProfileScreen() {
 					title="Editar Perfil"
 					onPress={() => router.push("/(tabs)/(profile-stack)/edit-profile")}
 				/>
-				<ProfileOption
-					icon="notifications-outline"
-					title="Notificações"
-					onPress={() => router.push("/(tabs)/(profile-stack)/notifications")}
-				/>
+
 				<ProfileOption
 					icon="lock-closed-outline"
 					title="Privacidade e Segurança"

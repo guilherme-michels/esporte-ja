@@ -1,9 +1,12 @@
+import fs from "fs";
+import path from "path";
 import { PrismaClient } from "@prisma/client";
 import { initTRPC } from "@trpc/server";
 import { TRPCError } from "@trpc/server";
 import { createHTTPServer } from "@trpc/server/adapters/standalone";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import multer from "multer";
 import { z } from "zod";
 import {
 	BookingSchema,
@@ -379,6 +382,39 @@ const bookingRouter = t.router({
 		}),
 });
 
+// Configuração do multer para upload de imagens
+const storage = multer.diskStorage({
+	destination: (req, file, cb) => {
+		const uploadDir = path.join(__dirname, "..", "..", "uploads");
+		// Cria o diretório se não existir
+		if (!fs.existsSync(uploadDir)) {
+			fs.mkdirSync(uploadDir, { recursive: true });
+		}
+		cb(null, uploadDir);
+	},
+	filename: (req, file, cb) => {
+		// Gera um nome único para o arquivo
+		const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+		cb(null, `${uniqueSuffix}-${file.originalname}`);
+	},
+});
+
+const upload = multer({
+	storage,
+	limits: {
+		fileSize: 5 * 1024 * 1024, // 5MB
+	},
+	fileFilter: (req, file, cb) => {
+		const allowedMimes = ["image/jpeg", "image/jpg", "image/png", "image/gif"];
+
+		if (allowedMimes.includes(file.mimetype)) {
+			cb(null, true);
+		} else {
+			cb(new Error("Tipo de arquivo inválido."));
+		}
+	},
+});
+
 // Depois, adicione-o ao router principal
 const appRouter = t.router({
 	event: t.router({
@@ -537,7 +573,6 @@ const appRouter = t.router({
 			}),
 	}),
 
-	// Rotas de Empresa
 	company: t.router({
 		getById: publicProcedure
 			.input(z.object({ id: z.string() }))
@@ -850,7 +885,7 @@ const appRouter = t.router({
 					});
 				}
 
-				// Busca o usuário pelo email
+				// Busca o usu��rio pelo email
 				const userToRemove = await prisma.user.findUnique({
 					where: { email: input.email },
 				});
@@ -873,6 +908,197 @@ const appRouter = t.router({
 						admins: true,
 					},
 				});
+			}),
+		update: protectedProcedure
+			.input(
+				z.object({
+					id: z.string(),
+					name: z.string().optional(),
+					address: z.string().optional(),
+					phone: z.string().optional(),
+					description: z.string().optional(),
+					logoImg: z.string().optional(),
+				}),
+			)
+			.mutation(async ({ ctx, input }) => {
+				const { id, ...updateData } = input;
+
+				// Verifica se o usuário tem permissão
+				const company = await prisma.company.findUnique({
+					where: { id },
+					include: { admins: true },
+				});
+
+				if (!company) {
+					throw new TRPCError({
+						code: "NOT_FOUND",
+						message: "Empresa não encontrada",
+					});
+				}
+
+				if (
+					company.ownerId !== ctx.user.userId &&
+					!company.admins.some((admin) => admin.id === ctx.user.userId)
+				) {
+					throw new TRPCError({
+						code: "FORBIDDEN",
+						message: "Sem permissão para editar esta empresa",
+					});
+				}
+
+				return await prisma.company.update({
+					where: { id },
+					data: updateData,
+				});
+			}),
+		getCourts: protectedProcedure
+			.input(
+				z.object({
+					companyId: z.string(),
+				}),
+			)
+			.query(async ({ ctx, input }) => {
+				const { companyId } = input;
+
+				console.log("Buscando quadras para companyId:", companyId);
+
+				const courts = await prisma.court.findMany({
+					where: {
+						companyId: companyId,
+					},
+					orderBy: {
+						createdAt: "desc",
+					},
+				});
+
+				console.log("Quadras encontradas:", courts);
+				return courts;
+			}),
+		createCourt: protectedProcedure
+			.input(
+				z.object({
+					companyId: z.string(),
+					name: z.string(),
+					description: z.string().optional(),
+					type: z.string(),
+				}),
+			)
+			.mutation(async ({ ctx, input }) => {
+				const { companyId, ...courtData } = input;
+
+				// Verifica permissões
+				const company = await prisma.company.findUnique({
+					where: { id: companyId },
+					include: { admins: true },
+				});
+
+				if (
+					!company ||
+					(company.ownerId !== ctx.user.userId &&
+						!company.admins.some((admin) => admin.id === ctx.user.userId))
+				) {
+					throw new TRPCError({
+						code: "FORBIDDEN",
+						message: "Sem permissão para adicionar quadras",
+					});
+				}
+
+				return await prisma.court.create({
+					data: {
+						...courtData,
+						companyId,
+					},
+				});
+			}),
+		updateCourt: protectedProcedure
+			.input(
+				z.object({
+					id: z.string(),
+					name: z.string().optional(),
+					description: z.string().optional(),
+					type: z.string().optional(),
+				}),
+			)
+			.mutation(async ({ ctx, input }) => {
+				const { id, ...updateData } = input;
+
+				const court = await prisma.court.findUnique({
+					where: { id },
+					include: { company: { include: { admins: true } } },
+				});
+
+				if (!court) {
+					throw new TRPCError({
+						code: "NOT_FOUND",
+						message: "Quadra não encontrada",
+					});
+				}
+
+				if (
+					court.company.ownerId !== ctx.user.userId &&
+					!court.company.admins.some((admin) => admin.id === ctx.user.userId)
+				) {
+					throw new TRPCError({
+						code: "FORBIDDEN",
+						message: "Sem permissão para editar esta quadra",
+					});
+				}
+
+				return await prisma.court.update({
+					where: { id },
+					data: updateData,
+				});
+			}),
+		uploadImage: protectedProcedure
+			.input(
+				z.object({
+					courtId: z.string(),
+					file: z.any(),
+				}),
+			)
+			.mutation(async ({ ctx, input }) => {
+				try {
+					const { courtId, file } = input;
+
+					// Configuração do multer para upload
+					const storage = multer.diskStorage({
+						destination: "./uploads/",
+						filename: (req, file, cb) => {
+							const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+							cb(null, `${uniqueSuffix}-${file.originalname}`);
+						},
+					});
+
+					const upload = multer({ storage });
+
+					// Processar o upload
+					const result = await new Promise((resolve, reject) => {
+						upload.single("file")(
+							{ body: { file } } as any,
+							{} as any,
+							(err: any) => {
+								if (err) reject(err);
+								resolve(true);
+							},
+						);
+					});
+
+					const imageUrl = `/uploads/${file.name}`;
+
+					const updatedCourt = await prisma.court.update({
+						where: { id: courtId },
+						data: { imageUrl },
+					});
+
+					return { imageUrl };
+				} catch (error) {
+					console.error("Erro no upload:", error);
+					throw new TRPCError({
+						code: "INTERNAL_SERVER_ERROR",
+						message: "Erro ao fazer upload da imagem",
+						cause: error,
+					});
+				}
 			}),
 	}),
 
